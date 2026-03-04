@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>DrinkPass v1.7.0 — スタッフ画面</title>
+<title>DrinkPass v1.8.0 — スタッフ画面</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
 <!-- Firebase SDK -->
@@ -137,7 +137,7 @@
 </head>
 <body>
 
-<div class="logo">Drink<span>Pass</span> <span style="font-size:11px;font-weight:400;color:var(--muted);">v1.7.0</span></div>
+<div class="logo">Drink<span>Pass</span> <span style="font-size:11px;font-weight:400;color:var(--muted);">v1.8.0</span><span style="font-family:'Arial Black',sans-serif;font-size:11px;font-weight:900;color:var(--muted);margin-left:10px;letter-spacing:0.03em;">GiG-BAND.COM</span></div>
 <div class="conn-bar"><div class="conn-dot" id="connDot"></div><span id="connLabel">Firebase接続中...</span></div>
 
 <div class="tab-bar">
@@ -226,7 +226,7 @@
 </div>
 
 <script>
-// DrinkPass v1.7.0
+// DrinkPass v1.8.0
 // v1.0.0 - 初版リリース
 // v1.0.1 - OK音チャイム2音・NG音連続ブザーに変更
 // v1.1.0 - お客様表示画面（display.html）連携追加
@@ -236,6 +236,7 @@
 // v1.5.0 - カメラボタン大型化・QR無効化機能追加
 // v1.6.0 - スキャン画面レイアウト整理（カメラボタン最上部・結果エリア明確化）
 // v1.7.0 - 手動入力欄を判定結果の下に移動
+// v1.8.0 - 判定後の背景色修正・GiG-BAND.COMブランド追加
 
 var localDb = {};
 var scanLog = [];
@@ -395,6 +396,7 @@ async function doScan() {
   }
 
   el.className = 'scan-status '+cls;
+  el.style.background = '';
   el.innerHTML =
     '<div class="status-icon">'+icon+'</div>'+
     '<div class="status-text" style="color:'+(cls==='ok'?'var(--accent)':'var(--danger)')+'">'+text+'</div>'+
@@ -416,7 +418,11 @@ function resetStatus() {
   var el = document.getElementById('scanStatus');
   if (el) {
     el.className = 'scan-status';
-    el.innerHTML = '<div class="status-icon">📷</div><div class="status-text" style="font-size:18px;color:var(--muted)">QRコードをスキャン</div><div class="status-sub">カメラまたは手動入力</div>';
+    el.style.background = '';
+    el.style.color = '';
+    el.innerHTML =
+      '<div class="status-text" style="font-size:15px;color:var(--muted);font-family:'Noto Sans JP',sans-serif;font-weight:400;">スキャン待機中</div>' +
+      '<div class="status-sub">QRを読み取ると結果がここに表示されます</div>';
   }
 }
 
