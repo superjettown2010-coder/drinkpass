@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>DrinkPass QR管理システム</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Noto+Sans+JP:wght@300;400;500;700&display=swap');
 
@@ -41,10 +42,13 @@
   .status-text { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; }
   .status-sub { font-size: 12px; color: var(--muted); margin-top: 6px; }
 
-  .camera-panel { background: var(--surface2); border: 1px solid var(--border); border-radius: 16px; padding: 20px; text-align: center; margin-bottom: 16px; }
-  .camera-panel-icon { font-size: 36px; margin-bottom: 8px; }
-  .camera-panel-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
-  .camera-panel-sub { font-size: 12px; color: var(--muted); margin-bottom: 16px; }
+  /* ライブカメラビュー */
+  .camera-view { display: none; margin-bottom: 16px; border-radius: 16px; overflow: hidden; position: relative; background: #000; }
+  .camera-view video { width: 100%; display: block; max-height: 280px; object-fit: cover; }
+  .scan-frame { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+  .scan-frame-inner { width: 200px; height: 200px; border: 2px solid var(--accent); border-radius: 12px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.5); }
+  .scan-hint { position: absolute; bottom: 10px; left: 0; right: 0; text-align: center; font-size: 12px; color: rgba(255,255,255,0.7); }
+  .close-cam { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); border: none; color: #fff; border-radius: 50%; width: 34px; height: 34px; font-size: 16px; cursor: pointer; }
 
   .input-group { display: flex; gap: 10px; margin-bottom: 12px; }
   .qr-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; color: var(--text); font-size: 14px; outline: none; transition: border-color 0.2s; }
@@ -58,7 +62,6 @@
   .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
   .btn-danger { background: var(--danger); color: #fff; }
   .btn-full { width: 100%; margin-top: 8px; padding: 16px; font-size: 15px; }
-  .btn-cancel { background: none; border: none; color: var(--muted); font-size: 13px; cursor: pointer; margin-top: 10px; display: block; width: 100%; text-align: center; }
 
   .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
   .stat-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 14px 10px; text-align: center; }
@@ -131,24 +134,23 @@
   <div class="scan-status" id="scanStatus">
     <div class="status-icon">📷</div>
     <div class="status-text" style="font-size:18px;color:var(--muted)">QRコードをスキャン</div>
-    <div class="status-sub">カメラで撮影または手動入力</div>
+    <div class="status-sub">カメラまたは手動入力</div>
   </div>
 
-  <div id="cameraPanel" class="camera-panel" style="display:none;">
-    <div class="camera-panel-icon">📸</div>
-    <div class="camera-panel-title">QRコードを撮影してください</div>
-    <div class="camera-panel-sub">「カメラを起動する」を押してQRコード全体が映るよう撮影してください</div>
-    <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;">
-    <button class="btn btn-primary btn-full" onclick="document.getElementById('cameraInput').click()">📷 カメラを起動する</button>
-    <button class="btn-cancel" onclick="closeCamera()">キャンセル</button>
+  <!-- ライブカメラ -->
+  <div class="camera-view" id="cameraView">
+    <video id="camVideo" autoplay playsinline muted></video>
+    <div class="scan-frame"><div class="scan-frame-inner"></div></div>
+    <div class="scan-hint">QRコードを枠内に合わせてください</div>
+    <button class="close-cam" onclick="stopCamera()">✕</button>
   </div>
 
   <div class="input-group">
     <input class="qr-input" id="qrInput" placeholder="QR IDを入力（例: EVT-0001）" autocomplete="off">
-    <button class="btn btn-secondary" onclick="openCamera()">📷</button>
+    <button class="btn btn-secondary" id="camBtn" onclick="toggleCamera()">📷</button>
     <button class="btn btn-primary" onclick="doScan()">判定</button>
   </div>
-  <p class="hint">📷ボタンでカメラ撮影 または IDを直接入力してEnter</p>
+  <p class="hint">📷ボタンでカメラ起動 → QRを枠内に合わせると自動判定</p>
 
   <div class="stats-grid">
     <div class="stat-card">
@@ -224,6 +226,8 @@
 <script>
 var db = {};
 var scanLog = [];
+var codeReader = null;
+var cameraActive = false;
 
 // TABS
 function switchTab(name) {
@@ -233,63 +237,57 @@ function switchTab(name) {
   });
   document.getElementById('page-' + name).classList.add('active');
   document.getElementById('tab-' + name).classList.add('active');
+  if (name !== 'scan') stopCamera();
   if (name === 'admin') renderTable();
 }
 
-// CAMERA
-function openCamera() {
-  document.getElementById('cameraPanel').style.display = 'block';
+// CAMERA (ZXing)
+function toggleCamera() {
+  if (cameraActive) {
+    stopCamera();
+  } else {
+    startCamera();
+  }
 }
 
-function closeCamera() {
-  document.getElementById('cameraPanel').style.display = 'none';
-  document.getElementById('cameraInput').value = '';
-}
+function startCamera() {
+  var view = document.getElementById('cameraView');
+  var video = document.getElementById('camVideo');
+  var btn = document.getElementById('camBtn');
 
-document.getElementById('cameraInput').addEventListener('change', function(e) {
-  var file = e.target.files[0];
-  if (!file) return;
-  closeCamera();
+  if (typeof ZXing === 'undefined') {
+    alert('スキャンライブラリの読み込みに失敗しました。\nページを再読み込みしてお試しください。');
+    return;
+  }
 
-  var statusEl = document.getElementById('scanStatus');
-  statusEl.className = 'scan-status';
-  statusEl.innerHTML = '<div class="status-icon">⏳</div><div class="status-text" style="font-size:18px;color:var(--muted)">読み取り中...</div>';
-
-  var img = new Image();
-  var url = URL.createObjectURL(file);
-
-  img.onload = function() {
-    URL.revokeObjectURL(url);
-    if (!('BarcodeDetector' in window)) {
-      showError('QRスキャン非対応です。IDを手動入力してください。');
-      return;
+  codeReader = new ZXing.BrowserQRCodeReader();
+  codeReader.decodeFromVideoDevice(null, 'camVideo', function(result, err) {
+    if (result) {
+      document.getElementById('qrInput').value = result.getText();
+      stopCamera();
+      doScan();
     }
-    var det = new BarcodeDetector({ formats: ['qr_code'] });
-    det.detect(img).then(function(codes) {
-      if (codes.length > 0) {
-        document.getElementById('qrInput').value = codes[0].rawValue;
-        doScan();
-      } else {
-        showError('QRを認識できませんでした。\n明るい場所でQR全体が映るよう撮影してください。');
-      }
-    }).catch(function(e) {
-      showError('読み取りエラー: ' + e.message);
-    });
-  };
+  });
 
-  img.onerror = function() {
-    URL.revokeObjectURL(url);
-    showError('画像の読み込みに失敗しました。');
-  };
+  view.style.display = 'block';
+  btn.textContent = '⏹';
+  btn.style.background = 'var(--danger)';
+  btn.style.color = '#fff';
+  cameraActive = true;
+}
 
-  img.src = url;
-});
-
-function showError(msg) {
-  var el = document.getElementById('scanStatus');
-  el.className = 'scan-status ng';
-  el.innerHTML = '<div class="status-icon">❓</div><div class="status-text" style="color:var(--danger);font-size:15px;">' + msg.replace(/\n/g,'<br>') + '</div>';
-  setTimeout(resetStatus, 4000);
+function stopCamera() {
+  var view = document.getElementById('cameraView');
+  var btn = document.getElementById('camBtn');
+  if (codeReader) {
+    try { codeReader.reset(); } catch(e) {}
+    codeReader = null;
+  }
+  view.style.display = 'none';
+  btn.textContent = '📷';
+  btn.style.background = '';
+  btn.style.color = '';
+  cameraActive = false;
 }
 
 // SCAN
@@ -332,7 +330,7 @@ function resetStatus() {
   var el = document.getElementById('scanStatus');
   if (el) {
     el.className = 'scan-status';
-    el.innerHTML = '<div class="status-icon">📷</div><div class="status-text" style="font-size:18px;color:var(--muted)">QRコードをスキャン</div><div class="status-sub">カメラで撮影または手動入力</div>';
+    el.innerHTML = '<div class="status-icon">📷</div><div class="status-text" style="font-size:18px;color:var(--muted)">QRコードをスキャン</div><div class="status-sub">カメラまたは手動入力</div>';
   }
 }
 
