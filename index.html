@@ -489,13 +489,15 @@ function renderTable() {
     var v=localDb[id];
     var badgeCls = v.used ? 'badge-used' : 'badge-unused';
     var badgeTxt = v.used ? '使用済' : '未使用';
-    var badgeTitle = v.used ? 'タップで未使用に戻す' : 'タップで使用済にする';
     return '<tr>' +
-      '<td style="font-family:Syne,sans-serif;font-weight:700">'+id+'</td>' +
-      '<td><span class="badge '+badgeCls+'" title="'+badgeTitle+'" onclick="toggleStatus(''+id+'')">'+badgeTxt+'</span></td>' +
-      '<td style="font-size:12px;color:var(--muted)">'+(v.usedAt||'—')+'</td>' +
+      '<td style="font-family:Syne,sans-serif;font-weight:700">' + id + '</td>' +
+      '<td><span class="badge ' + badgeCls + '" data-id="' + id + '">' + badgeTxt + '</span></td>' +
+      '<td style="font-size:12px;color:var(--muted)">' + (v.usedAt || '—') + '</td>' +
       '</tr>';
   }).join('');
+  body.querySelectorAll('.badge[data-id]').forEach(function(el) {
+    el.addEventListener('click', function() { toggleStatus(this.getAttribute('data-id')); });
+  });
 }
 
 async function toggleStatus(id) {
