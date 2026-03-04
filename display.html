@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DrinkPass — お客様画面</title>
+<title>DrinkPass v1.3.0 — お客様画面</title>
 <!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -54,7 +54,7 @@
   @keyframes popOK{0%{opacity:0;transform:scale(.3) rotate(-10deg)}60%{opacity:1;transform:scale(1.15) rotate(3deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
   @keyframes popNG{0%{opacity:0;transform:scale(.3) rotate(-15deg)}50%{opacity:1;transform:scale(1.2) rotate(5deg)}70%{transform:scale(.95) rotate(-2deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
   .mark.ok{font-size:clamp(120px,30vw,240px);color:#00e5a0;filter:drop-shadow(0 0 40px #00e5a0);}
-  .mark.ng{width:clamp(160px,38vw,300px);height:auto;}
+  .mark.ng{width:clamp(160px,38vw,320px);height:auto;filter:drop-shadow(0 0 30px rgba(255,59,92,0.6));}
 
   .message{font-family:'Syne',sans-serif;font-size:clamp(24px,6vw,56px);font-weight:800;letter-spacing:-.02em;opacity:0;transform:translateY(20px);}
   .message.show{animation:slideUp .4s ease .15s forwards;}
@@ -123,9 +123,45 @@ document.addEventListener('firebase-ready', function() {
   document.getElementById('connLabel').textContent = 'Firebase接続済み';
 });
 
+// ===== SOUND =====
+var audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+function playOK() {
+  try {
+    var c = getAudioCtx();
+    [0, 0.2].forEach(function(d, i) {
+      var o = c.createOscillator(), g = c.createGain();
+      o.connect(g); g.connect(c.destination);
+      o.type = 'sine'; o.frequency.value = i===0 ? 880 : 1320;
+      g.gain.setValueAtTime(0.9, c.currentTime+d);
+      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime+d+0.4);
+      o.start(c.currentTime+d); o.stop(c.currentTime+d+0.4);
+    });
+  } catch(e) {}
+}
+function playNG() {
+  try {
+    var c = getAudioCtx();
+    [0, 0.2, 0.4].forEach(function(d) {
+      var o = c.createOscillator(), g = c.createGain();
+      o.connect(g); g.connect(c.destination);
+      o.type = 'square'; o.frequency.value = 200;
+      g.gain.setValueAtTime(0.9, c.currentTime+d);
+      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime+d+0.15);
+      o.start(c.currentTime+d); o.stop(c.currentTime+d+0.15);
+    });
+  } catch(e) {}
+}
+
 window.showResult = function(data) {
   var isOK = data.result === 'OK';
   var cls = isOK ? 'ok' : 'ng';
+
+  // 音声再生
+  if (isOK) playOK(); else playNG();
 
   document.body.className = cls;
   document.getElementById('standby').style.display = 'none';
@@ -143,10 +179,19 @@ window.showResult = function(data) {
     mark.textContent = '◎';
   } else {
     mark.innerHTML =
-      '<svg viewBox="0 0 200 180" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;">' +
-      '<ellipse cx="100" cy="82" rx="95" ry="72" fill="white" stroke="#222" stroke-width="7"/>' +
-      '<path d="M70 148 Q60 175 40 178 Q65 165 75 150 Z" fill="white" stroke="#222" stroke-width="5" stroke-linejoin="round"/>' +
-      '<text x="100" y="100" text-anchor="middle" font-family="Syne,Arial Black,sans-serif" font-weight="900" font-size="38" fill="#222" letter-spacing="-1">Sorry!</text>' +
+      '<svg viewBox="0 0 220 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;">' +
+      // 外側グロー
+      '<defs>' +
+        '<filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>' +
+      '</defs>' +
+      // 吹き出し本体（ダーク背景＋レッドボーダー）
+      '<ellipse cx="110" cy="88" rx="100" ry="74" fill="#1a0206" stroke="#ff3b5c" stroke-width="4" filter="url(#glow)"/>' +
+      // 吹き出しの尻尾
+      '<path d="M76 156 Q64 184 42 188 Q68 172 80 158 Z" fill="#1a0206" stroke="#ff3b5c" stroke-width="3.5" stroke-linejoin="round"/>' +
+      // Sorry! テキスト（レッド）
+      '<text x="110" y="82" text-anchor="middle" font-family="Syne,Arial Black,sans-serif" font-weight="900" font-size="42" fill="#ff3b5c" letter-spacing="-1" filter="url(#glow)">Sorry!</text>' +
+      // サブテキスト
+      '<text x="110" y="118" text-anchor="middle" font-family="Noto Sans JP,sans-serif" font-weight="700" font-size="16" fill="rgba(255,59,92,0.7)">もう一度ご確認ください</text>' +
       '</svg>';
   }
   void mark.offsetWidth;

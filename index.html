@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>DrinkPass v1.2.0 — スタッフ画面</title>
+<title>DrinkPass v1.3.0 — スタッフ画面</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
 <!-- Firebase SDK -->
@@ -130,7 +130,7 @@
 </head>
 <body>
 
-<div class="logo">Drink<span>Pass</span> <span style="font-size:11px;font-weight:400;color:var(--muted);">v1.2.0</span></div>
+<div class="logo">Drink<span>Pass</span> <span style="font-size:11px;font-weight:400;color:var(--muted);">v1.3.0</span></div>
 <div class="conn-bar"><div class="conn-dot" id="connDot"></div><span id="connLabel">Firebase接続中...</span></div>
 
 <div class="tab-bar">
@@ -204,11 +204,12 @@
 </div>
 
 <script>
-// DrinkPass v1.2.0
+// DrinkPass v1.3.0
 // v1.0.0 - 初版リリース
 // v1.0.1 - OK音チャイム2音・NG音連続ブザーに変更
 // v1.1.0 - お客様表示画面（display.html）連携追加
 // v1.2.0 - Firebase Firestore リアルタイム同期対応
+// v1.3.0 - 管理画面リアルタイム同期・display音声・SorryデザインをNGテーマに変更
 
 var localDb = {};
 var scanLog = [];
@@ -225,14 +226,18 @@ document.addEventListener('firebase-ready', function() {
 });
 
 // ===== Firestore操作 =====
-async function loadFromFirestore() {
+function loadFromFirestore() {
   try {
     var fs = window._fs;
-    var snap = await fs.getDocs(fs.collection(fs.db, 'qrcodes'));
-    localDb = {};
-    snap.forEach(function(d) { localDb[d.id] = d.data(); });
-    updateStats();
-    renderTable();
+    // onSnapshotでリアルタイム監視 → 全端末の管理画面が自動同期
+    fs.onSnapshot(fs.collection(fs.db, 'qrcodes'), function(snap) {
+      localDb = {};
+      snap.forEach(function(d) { localDb[d.id] = d.data(); });
+      updateStats();
+      renderTable();
+    }, function(e) {
+      console.error('snapshot error', e);
+    });
   } catch(e) {
     console.error('load error', e);
   }
