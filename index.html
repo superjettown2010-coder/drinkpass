@@ -766,12 +766,15 @@ async function startCamera() {
   const wrap = document.getElementById('cameraWrap');
   const video = document.getElementById('cameraVideo');
 
-  // BarcodeDetector対応チェック（iOS16+ Safari / Chrome対応）
+  // BarcodeDetector対応チェック（iOS17+ Safari / Chrome対応）
   if ('BarcodeDetector' in window) {
-    barcodeDetector = new BarcodeDetector({ formats: ['qr_code'] });
-  } else if (typeof jsQR === 'undefined') {
-    alert('お使いのブラウザはQRスキャンに対応していません。\niOS16以上のSafariをお使いください。');
-    return;
+    try {
+      barcodeDetector = new BarcodeDetector({ formats: ['qr_code'] });
+    } catch(e) {
+      barcodeDetector = null;
+    }
+  } else {
+    barcodeDetector = null; // jsQRフォールバックを使用
   }
 
   try {
@@ -779,9 +782,9 @@ async function startCamera() {
       video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
     });
     video.srcObject = cameraStream;
-    await new Promise(r => video.onloadedmetadata = r);
+    video.onloadedmetadata = () => { video.play(); };
     wrap.style.display = 'block';
-    scanInterval = setInterval(scanFrame, 250);
+    scanInterval = setInterval(scanFrame, 200);
   } catch (e) {
     alert('カメラにアクセスできませんでした。\nSafariの設定 → このWebサイト → カメラを「許可」にしてください。\n\n' + e.message);
   }
@@ -795,11 +798,10 @@ function stopCamera() {
 
 async function scanFrame() {
   const video = document.getElementById('cameraVideo');
-  if (!video.readyState || video.readyState < 2 || video.paused) return;
+  if (!video || video.readyState < 2 || video.paused || video.videoWidth === 0) return;
 
   try {
     if (barcodeDetector) {
-      // BarcodeDetector（iOS Safari / Chrome）
       const codes = await barcodeDetector.detect(video);
       if (codes.length > 0) {
         document.getElementById('qrInput').value = codes[0].rawValue;
@@ -807,14 +809,16 @@ async function scanFrame() {
         handleScan();
       }
     } else {
-      // jsQRフォールバック
+      // jsQRフォールバック（全iOSバージョン対応）
       const canvas = document.getElementById('cameraCanvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0);
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
+      const w = video.videoWidth;
+      const h = video.videoHeight;
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(video, 0, 0, w, h);
+      const imageData = ctx.getImageData(0, 0, w, h);
+      const code = jsQR(imageData.data, w, h, { inversionAttempts: 'attemptBoth' });
       if (code && code.data) {
         document.getElementById('qrInput').value = code.data;
         stopCamera();
