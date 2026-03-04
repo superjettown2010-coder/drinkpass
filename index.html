@@ -17,412 +17,96 @@
     --accent2: #ff6b35;
     --danger: #ff3b5c;
     --text: #f0f0f8;
-    --text-muted: #6b6b8a;
-    --ok-glow: 0 0 30px rgba(0,229,160,0.4);
-    --ng-glow: 0 0 30px rgba(255,59,92,0.4);
+    --muted: #6b6b8a;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Noto Sans JP', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
-  body {
-    font-family: 'Noto Sans JP', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-  }
+  .tab-bar { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+  .tab { flex: 1; padding: 14px 8px; text-align: center; font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; color: var(--muted); cursor: pointer; border: none; background: none; border-bottom: 2px solid transparent; transition: all 0.2s; }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-icon { font-size: 18px; display: block; margin-bottom: 3px; }
 
-  /* ===== TABS ===== */
-  .tab-bar {
-    display: flex;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    position: sticky;
-    top: 0;
-    z-index: 100;
-  }
-
-  .tab {
-    flex: 1;
-    padding: 16px 8px;
-    text-align: center;
-    font-family: 'Syne', sans-serif;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    color: var(--text-muted);
-    cursor: pointer;
-    border: none;
-    background: none;
-    transition: all 0.2s;
-    border-bottom: 2px solid transparent;
-  }
-
-  .tab.active {
-    color: var(--accent);
-    border-bottom-color: var(--accent);
-  }
-
-  .tab-icon { font-size: 18px; display: block; margin-bottom: 4px; }
-
-  .page { display: none; padding: 24px 16px; max-width: 600px; margin: 0 auto; }
+  .page { display: none; padding: 20px 16px; max-width: 600px; margin: 0 auto; }
   .page.active { display: block; }
 
-  /* ===== HEADER ===== */
-  .logo {
-    font-family: 'Syne', sans-serif;
-    font-size: 22px;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    padding: 20px 16px 0;
-    max-width: 600px;
-    margin: 0 auto;
-  }
-
+  .logo { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; padding: 18px 16px 0; max-width: 600px; margin: 0 auto; }
   .logo span { color: var(--accent); }
 
-  /* ===== SCANNER PAGE ===== */
-  .scan-status {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 32px 24px;
-    text-align: center;
-    margin-bottom: 24px;
-    transition: all 0.3s;
-    min-height: 180px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-  }
+  .scan-status { background: var(--surface2); border: 1px solid var(--border); border-radius: 16px; padding: 28px 20px; text-align: center; margin-bottom: 20px; min-height: 160px; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.3s; }
+  .scan-status.ok { border-color: var(--accent); box-shadow: 0 0 30px rgba(0,229,160,0.3); }
+  .scan-status.ng { border-color: var(--danger); box-shadow: 0 0 30px rgba(255,59,92,0.3); }
+  .status-icon { font-size: 48px; margin-bottom: 10px; }
+  .status-text { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; }
+  .status-sub { font-size: 12px; color: var(--muted); margin-top: 6px; }
 
-  .scan-status.ok {
-    border-color: var(--accent);
-    box-shadow: var(--ok-glow);
-    animation: pulse-ok 0.5s ease;
-  }
+  .camera-panel { background: var(--surface2); border: 1px solid var(--border); border-radius: 16px; padding: 20px; text-align: center; margin-bottom: 16px; }
+  .camera-panel-icon { font-size: 36px; margin-bottom: 8px; }
+  .camera-panel-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .camera-panel-sub { font-size: 12px; color: var(--muted); margin-bottom: 16px; }
 
-  .scan-status.ng {
-    border-color: var(--danger);
-    box-shadow: var(--ng-glow);
-    animation: pulse-ng 0.5s ease;
-  }
-
-  @keyframes pulse-ok {
-    0% { transform: scale(0.97); }
-    50% { transform: scale(1.02); }
-    100% { transform: scale(1); }
-  }
-
-  @keyframes pulse-ng {
-    0% { transform: translateX(-4px); }
-    25% { transform: translateX(4px); }
-    50% { transform: translateX(-4px); }
-    75% { transform: translateX(4px); }
-    100% { transform: translateX(0); }
-  }
-
-  .status-icon { font-size: 56px; margin-bottom: 12px; }
-  .status-text { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; }
-  .status-sub { font-size: 13px; color: var(--text-muted); margin-top: 8px; }
-
-  .input-group {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 16px;
-  }
-
-  .qr-input {
-    flex: 1;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 14px 16px;
-    color: var(--text);
-    font-size: 14px;
-    font-family: 'Noto Sans JP', sans-serif;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-
+  .input-group { display: flex; gap: 10px; margin-bottom: 12px; }
+  .qr-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; color: var(--text); font-size: 14px; outline: none; transition: border-color 0.2s; }
   .qr-input:focus { border-color: var(--accent); }
-  .qr-input::placeholder { color: var(--text-muted); }
+  .qr-input::placeholder { color: var(--muted); }
+  .hint { font-size: 12px; color: var(--muted); text-align: center; margin-bottom: 20px; }
 
-  .btn {
-    padding: 14px 20px;
-    border-radius: 10px;
-    border: none;
-    font-family: 'Syne', sans-serif;
-    font-weight: 700;
-    font-size: 13px;
-    letter-spacing: 0.05em;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
+  .btn { padding: 14px 18px; border-radius: 10px; border: none; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px; cursor: pointer; transition: all 0.15s; }
+  .btn-primary { background: var(--accent); color: #000; }
+  .btn-primary:active { opacity: 0.75; }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-full { width: 100%; margin-top: 8px; padding: 16px; font-size: 15px; }
+  .btn-cancel { background: none; border: none; color: var(--muted); font-size: 13px; cursor: pointer; margin-top: 10px; display: block; width: 100%; text-align: center; }
 
-  .btn-primary {
-    background: var(--accent);
-    color: #000;
-  }
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+  .stat-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 14px 10px; text-align: center; }
+  .stat-value { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800; }
+  .stat-label { font-size: 11px; color: var(--muted); margin-top: 3px; }
 
-  .btn-primary:hover { opacity: 0.85; transform: translateY(-1px); }
-  .btn-primary:active { transform: translateY(0); }
+  .progress-wrap { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 20px; }
+  .progress-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .progress-bar { height: 6px; background: var(--border); border-radius: 99px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #00b4d8); border-radius: 99px; transition: width 0.5s ease; }
 
-  .btn-secondary {
-    background: var(--surface2);
-    color: var(--text);
-    border: 1px solid var(--border);
-  }
-
-  .btn-danger {
-    background: var(--danger);
-    color: #fff;
-  }
-
-  .hint {
-    font-size: 12px;
-    color: var(--text-muted);
-    text-align: center;
-    margin-bottom: 24px;
-  }
-
-  /* ===== STATS ===== */
-  .stats-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 12px;
-    margin-bottom: 24px;
-  }
-
-  .stat-card {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 16px 12px;
-    text-align: center;
-  }
-
-  .stat-value {
-    font-family: 'Syne', sans-serif;
-    font-size: 28px;
-    font-weight: 800;
-  }
-
-  .stat-label { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
-  .stat-used .stat-value { color: var(--accent); }
-  .stat-unused .stat-value { color: var(--text-muted); }
-  .stat-total .stat-value { color: var(--accent2); }
-
-  /* ===== PROGRESS BAR ===== */
-  .progress-wrap {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 24px;
-  }
-
-  .progress-label {
-    display: flex;
-    justify-content: space-between;
-    font-size: 12px;
-    color: var(--text-muted);
-    margin-bottom: 10px;
-  }
-
-  .progress-bar {
-    height: 8px;
-    background: var(--border);
-    border-radius: 99px;
-    overflow: hidden;
-  }
-
-  .progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--accent), #00b4d8);
-    border-radius: 99px;
-    transition: width 0.5s ease;
-  }
-
-  /* ===== LOG ===== */
-  .section-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    color: var(--text-muted);
-    margin-bottom: 12px;
-    text-transform: uppercase;
-  }
-
+  .section-title { font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 10px; text-transform: uppercase; }
   .log-list { display: flex; flex-direction: column; gap: 8px; }
-
-  .log-item {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 12px 14px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    animation: fadeIn 0.3s ease;
-  }
-
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-8px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .log-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .log-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 11px 14px; display: flex; align-items: center; gap: 10px; }
+  .log-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
   .log-dot.ok { background: var(--accent); }
   .log-dot.ng { background: var(--danger); }
-
   .log-id { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; flex: 1; }
   .log-result { font-size: 12px; font-weight: 700; }
   .log-result.ok { color: var(--accent); }
   .log-result.ng { color: var(--danger); }
-  .log-time { font-size: 11px; color: var(--text-muted); }
+  .log-time { font-size: 11px; color: var(--muted); }
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); }
+  .empty-icon { font-size: 36px; margin-bottom: 10px; }
 
-  /* ===== SETUP PAGE ===== */
-  .setup-card {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 24px;
-    margin-bottom: 16px;
-  }
-
-  .setup-card h3 {
-    font-family: 'Syne', sans-serif;
-    font-size: 15px;
-    font-weight: 700;
-    margin-bottom: 16px;
-    color: var(--accent);
-  }
-
-  .form-row { margin-bottom: 14px; }
-
-  .form-label {
-    display: block;
-    font-size: 12px;
-    color: var(--text-muted);
-    margin-bottom: 6px;
-  }
-
-  .form-input {
-    width: 100%;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 12px 14px;
-    color: var(--text);
-    font-size: 14px;
-    font-family: 'Noto Sans JP', sans-serif;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-
+  .setup-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 16px; padding: 22px; margin-bottom: 14px; }
+  .setup-card h3 { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; margin-bottom: 14px; color: var(--accent); }
+  .form-row { margin-bottom: 12px; }
+  .form-label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+  .form-input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; color: var(--text); font-size: 14px; outline: none; transition: border-color 0.2s; }
   .form-input:focus { border-color: var(--accent); }
+  .qr-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-top: 14px; }
+  .qr-cell { background: white; border-radius: 6px; padding: 4px; text-align: center; }
+  .qr-cell canvas { width: 100% !important; height: auto !important; }
+  .qr-cell-label { font-size: 8px; color: #333; margin-top: 2px; }
 
-  .qr-preview-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-    margin-top: 16px;
-  }
-
-  .qr-preview-item {
-    background: white;
-    border-radius: 6px;
-    padding: 4px;
-    text-align: center;
-  }
-
-  .qr-preview-item canvas { width: 100% !important; height: auto !important; }
-  .qr-preview-label { font-size: 8px; color: #333; margin-top: 2px; }
-
-  /* ===== ADMIN PAGE ===== */
-  .admin-table-wrap {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    overflow: hidden;
-    margin-bottom: 16px;
-  }
-
-  .admin-table { width: 100%; border-collapse: collapse; }
-
-  .admin-table th {
-    background: var(--surface);
-    padding: 12px 14px;
-    text-align: left;
-    font-family: 'Syne', sans-serif;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    color: var(--text-muted);
-    text-transform: uppercase;
-  }
-
-  .admin-table td {
-    padding: 11px 14px;
-    font-size: 13px;
-    border-top: 1px solid var(--border);
-  }
-
-  .badge {
-    display: inline-block;
-    padding: 3px 8px;
-    border-radius: 99px;
-    font-size: 11px;
-    font-weight: 700;
-    font-family: 'Syne', sans-serif;
-  }
-
-  .badge-used { background: rgba(0,229,160,0.15); color: var(--accent); }
-  .badge-unused { background: rgba(107,107,138,0.2); color: var(--text-muted); }
-
-  .search-input {
-    width: 100%;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 12px 16px;
-    color: var(--text);
-    font-size: 14px;
-    font-family: 'Noto Sans JP', sans-serif;
-    outline: none;
-    margin-bottom: 12px;
-    transition: border-color 0.2s;
-  }
-
+  .search-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; color: var(--text); font-size: 14px; outline: none; margin-bottom: 10px; transition: border-color 0.2s; }
   .search-input:focus { border-color: var(--accent); }
-  .search-input::placeholder { color: var(--text-muted); }
-
-  .empty-state {
-    text-align: center;
-    padding: 48px 24px;
-    color: var(--text-muted);
-  }
-
-  .empty-state-icon { font-size: 40px; margin-bottom: 12px; }
-
-  .tag {
-    display: inline-block;
-    background: rgba(0,229,160,0.1);
-    color: var(--accent);
-    border: 1px solid rgba(0,229,160,0.3);
-    border-radius: 6px;
-    font-size: 11px;
-    font-family: 'Syne', sans-serif;
-    font-weight: 700;
-    padding: 2px 8px;
-    margin-bottom: 16px;
-  }
-
-  .divider { height: 1px; background: var(--border); margin: 20px 0; }
-
-  .reset-btn-wrap { text-align: center; margin-top: 16px; }
+  .search-input::placeholder { color: var(--muted); }
+  .table-wrap { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 14px; }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: var(--surface); padding: 11px 14px; text-align: left; font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+  td { padding: 10px 14px; font-size: 13px; border-top: 1px solid var(--border); }
+  .badge { display: inline-block; padding: 3px 8px; border-radius: 99px; font-size: 11px; font-weight: 700; }
+  .badge-used { background: rgba(0,229,160,0.15); color: var(--accent); }
+  .badge-unused { background: rgba(107,107,138,0.2); color: var(--muted); }
+  .tag { display: inline-block; background: rgba(0,229,160,0.1); color: var(--accent); border: 1px solid rgba(0,229,160,0.3); border-radius: 6px; font-size: 11px; font-family: 'Syne', sans-serif; font-weight: 700; padding: 2px 8px; margin-bottom: 14px; }
+  .divider { height: 1px; background: var(--border); margin: 16px 0; }
 </style>
 </head>
 <body>
@@ -430,407 +114,341 @@
 <div class="logo">Drink<span>Pass</span></div>
 
 <div class="tab-bar">
-  <button class="tab active" onclick="switchTab('scan')">
+  <button class="tab active" id="tab-scan" onclick="switchTab('scan')">
     <span class="tab-icon">📷</span>スキャン
   </button>
-  <button class="tab" onclick="switchTab('setup')">
+  <button class="tab" id="tab-setup" onclick="switchTab('setup')">
     <span class="tab-icon">⚙️</span>発行設定
   </button>
-  <button class="tab" onclick="switchTab('admin')">
+  <button class="tab" id="tab-admin" onclick="switchTab('admin')">
     <span class="tab-icon">📊</span>管理
   </button>
 </div>
 
-<!-- ===== SCAN PAGE ===== -->
+<!-- SCAN -->
 <div id="page-scan" class="page active">
+
   <div class="scan-status" id="scanStatus">
     <div class="status-icon">📷</div>
-    <div class="status-text" style="font-size:18px; color: var(--text-muted);">QRコードをスキャン</div>
-    <div class="status-sub">カメラまたは手動入力で読み取り</div>
+    <div class="status-text" style="font-size:18px;color:var(--muted)">QRコードをスキャン</div>
+    <div class="status-sub">カメラで撮影または手動入力</div>
   </div>
 
-  <!-- カメラ入力（iOS標準カメラ経由） -->
-  <div id="cameraWrap" style="display:none; margin-bottom:16px;">
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:16px;padding:20px;text-align:center;">
-      <div style="font-size:40px;margin-bottom:8px;">📷</div>
-      <div style="font-size:14px;font-weight:700;margin-bottom:4px;">カメラでQRコードを撮影</div>
-      <div style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">撮影するとQRコードが自動で読み取られます</div>
-      <input type="file" id="cameraFileInput" accept="image/*" capture="environment"
-        style="display:none;" onchange="handleImageFile(event)" />
-      <button class="btn btn-primary" style="width:100%;" onclick="document.getElementById('cameraFileInput').click()">
-        📷 カメラを起動する
-      </button>
-      <button onclick="stopCamera()" style="margin-top:10px;background:none;border:none;color:var(--text-muted);font-size:13px;cursor:pointer;">キャンセル</button>
-    </div>
+  <div id="cameraPanel" class="camera-panel" style="display:none;">
+    <div class="camera-panel-icon">📸</div>
+    <div class="camera-panel-title">QRコードを撮影してください</div>
+    <div class="camera-panel-sub">「カメラを起動する」を押してQRコード全体が映るよう撮影してください</div>
+    <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;">
+    <button class="btn btn-primary btn-full" onclick="document.getElementById('cameraInput').click()">📷 カメラを起動する</button>
+    <button class="btn-cancel" onclick="closeCamera()">キャンセル</button>
   </div>
 
   <div class="input-group">
-    <input class="qr-input" id="qrInput" placeholder="QR IDを入力（例: EVT-0001）" autocomplete="off" />
-    <button class="btn btn-secondary" onclick="startCamera()" title="カメラ起動">📷</button>
-    <button class="btn btn-primary" onclick="handleScan()">判定</button>
+    <input class="qr-input" id="qrInput" placeholder="QR IDを入力（例: EVT-0001）" autocomplete="off">
+    <button class="btn btn-secondary" onclick="openCamera()">📷</button>
+    <button class="btn btn-primary" onclick="doScan()">判定</button>
   </div>
-  <p class="hint">※ 📷 ボタンでカメラ起動 → QRを枠内に合わせると自動判定</p>
+  <p class="hint">📷ボタンでカメラ撮影 または IDを直接入力してEnter</p>
 
   <div class="stats-grid">
-    <div class="stat-card stat-used">
-      <div class="stat-value" id="usedCount">0</div>
+    <div class="stat-card">
+      <div class="stat-value" id="cntUsed" style="color:var(--accent)">0</div>
       <div class="stat-label">使用済み</div>
     </div>
-    <div class="stat-card stat-unused">
-      <div class="stat-value" id="unusedCount">0</div>
+    <div class="stat-card">
+      <div class="stat-value" id="cntUnused" style="color:var(--muted)">0</div>
       <div class="stat-label">未使用</div>
     </div>
-    <div class="stat-card stat-total">
-      <div class="stat-value" id="totalCount">0</div>
+    <div class="stat-card">
+      <div class="stat-value" id="cntTotal" style="color:var(--accent2)">0</div>
       <div class="stat-label">総発行数</div>
     </div>
   </div>
 
   <div class="progress-wrap">
-    <div class="progress-label">
-      <span>使用率</span>
-      <span id="progressPct">0%</span>
-    </div>
-    <div class="progress-bar">
-      <div class="progress-fill" id="progressFill" style="width:0%"></div>
-    </div>
+    <div class="progress-label"><span>使用率</span><span id="pctLabel">0%</span></div>
+    <div class="progress-bar"><div class="progress-fill" id="pctBar" style="width:0%"></div></div>
   </div>
 
   <div class="section-title">直近のスキャン履歴</div>
   <div class="log-list" id="logList">
-    <div class="empty-state">
-      <div class="empty-state-icon">🔍</div>
-      <div>まだスキャンがありません</div>
-    </div>
+    <div class="empty-state"><div class="empty-icon">🔍</div>まだスキャンがありません</div>
   </div>
 </div>
 
-<!-- ===== SETUP PAGE ===== -->
+<!-- SETUP -->
 <div id="page-setup" class="page">
   <div class="tag">STEP 1 — イベント設定</div>
-
   <div class="setup-card">
     <h3>🎪 イベント情報</h3>
     <div class="form-row">
       <label class="form-label">イベント名</label>
-      <input class="form-input" id="eventName" placeholder="例: Summer Party 2025" />
+      <input class="form-input" id="eventName" placeholder="例: Summer Party 2025">
     </div>
     <div class="form-row">
       <label class="form-label">発行枚数</label>
-      <input class="form-input" type="number" id="issueCount" placeholder="例: 1000" min="1" max="5000" />
+      <input class="form-input" type="number" id="issueCount" placeholder="例: 1000" min="1" max="5000">
     </div>
     <div class="form-row">
       <label class="form-label">IDプレフィックス</label>
-      <input class="form-input" id="idPrefix" placeholder="例: EVT" maxlength="6" />
+      <input class="form-input" id="idPrefix" placeholder="例: EVT" maxlength="6">
     </div>
-    <button class="btn btn-primary" style="width:100%; margin-top:8px;" onclick="generateQRs()">
-      ✦ QRコードを発行する
-    </button>
+    <button class="btn btn-primary" style="width:100%;margin-top:6px;" onclick="generateQRs()">✦ QRコードを発行する</button>
   </div>
-
-  <div class="setup-card" id="previewCard" style="display:none">
+  <div class="setup-card" id="previewCard" style="display:none;">
     <h3>🔍 発行プレビュー（先頭8枚）</h3>
-    <div class="qr-preview-grid" id="qrPreviewGrid"></div>
+    <div class="qr-grid" id="qrGrid"></div>
     <div class="divider"></div>
-    <p style="font-size:12px; color: var(--text-muted); text-align:center;">
-      印刷データはCSVでエクスポートし、印刷会社に渡してください
-    </p>
-    <button class="btn btn-secondary" style="width:100%; margin-top:12px;" onclick="exportCSV()">
-      📥 CSVエクスポート
-    </button>
+    <p style="font-size:12px;color:var(--muted);text-align:center;">CSVをエクスポートして印刷会社へ渡してください</p>
+    <button class="btn btn-secondary" style="width:100%;margin-top:10px;" onclick="exportCSV()">📥 CSVエクスポート</button>
   </div>
 </div>
 
-<!-- ===== ADMIN PAGE ===== -->
+<!-- ADMIN -->
 <div id="page-admin" class="page">
   <div class="tag">管理画面</div>
-
-  <input class="search-input" id="searchInput" placeholder="🔍 QR IDで検索..." oninput="renderAdminTable()" />
-
-  <div class="admin-table-wrap">
-    <table class="admin-table">
-      <thead>
-        <tr>
-          <th>QR ID</th>
-          <th>ステータス</th>
-          <th>使用日時</th>
-        </tr>
-      </thead>
-      <tbody id="adminTableBody">
-        <tr>
-          <td colspan="3">
-            <div class="empty-state">
-              <div class="empty-state-icon">📋</div>
-              <div>発行設定でQRを発行してください</div>
-            </div>
-          </td>
-        </tr>
+  <input class="search-input" id="searchInput" placeholder="🔍 QR IDで検索..." oninput="renderTable()">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>QR ID</th><th>ステータス</th><th>使用日時</th></tr></thead>
+      <tbody id="adminBody">
+        <tr><td colspan="3"><div class="empty-state"><div class="empty-icon">📋</div>発行設定でQRを発行してください</div></td></tr>
       </tbody>
     </table>
   </div>
-
-  <div class="reset-btn-wrap">
+  <div style="text-align:center;">
     <button class="btn btn-danger" onclick="resetAll()">🗑 全データリセット</button>
   </div>
 </div>
 
 <script>
-// ===== STATE =====
-let db = {}; // { qrId: { used: bool, usedAt: string|null } }
-let scanLog = [];
+var db = {};
+var scanLog = [];
 
-// ===== TAB =====
+// TABS
 function switchTab(name) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  ['scan','setup','admin'].forEach(function(n) {
+    document.getElementById('page-' + n).classList.remove('active');
+    document.getElementById('tab-' + n).classList.remove('active');
+  });
   document.getElementById('page-' + name).classList.add('active');
-  event.currentTarget.classList.add('active');
-  if (name === 'admin') renderAdminTable();
-  if (name === 'scan') updateStats();
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'admin') renderTable();
 }
 
-// ===== SCAN =====
-document.getElementById('qrInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') handleScan();
+// CAMERA
+function openCamera() {
+  document.getElementById('cameraPanel').style.display = 'block';
+}
+
+function closeCamera() {
+  document.getElementById('cameraPanel').style.display = 'none';
+  document.getElementById('cameraInput').value = '';
+}
+
+document.getElementById('cameraInput').addEventListener('change', function(e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  closeCamera();
+
+  var statusEl = document.getElementById('scanStatus');
+  statusEl.className = 'scan-status';
+  statusEl.innerHTML = '<div class="status-icon">⏳</div><div class="status-text" style="font-size:18px;color:var(--muted)">読み取り中...</div>';
+
+  var img = new Image();
+  var url = URL.createObjectURL(file);
+
+  img.onload = function() {
+    URL.revokeObjectURL(url);
+    if (!('BarcodeDetector' in window)) {
+      showError('QRスキャン非対応です。IDを手動入力してください。');
+      return;
+    }
+    var det = new BarcodeDetector({ formats: ['qr_code'] });
+    det.detect(img).then(function(codes) {
+      if (codes.length > 0) {
+        document.getElementById('qrInput').value = codes[0].rawValue;
+        doScan();
+      } else {
+        showError('QRを認識できませんでした。\n明るい場所でQR全体が映るよう撮影してください。');
+      }
+    }).catch(function(e) {
+      showError('読み取りエラー: ' + e.message);
+    });
+  };
+
+  img.onerror = function() {
+    URL.revokeObjectURL(url);
+    showError('画像の読み込みに失敗しました。');
+  };
+
+  img.src = url;
 });
 
-function handleScan() {
-  const id = document.getElementById('qrInput').value.trim().toUpperCase();
+function showError(msg) {
+  var el = document.getElementById('scanStatus');
+  el.className = 'scan-status ng';
+  el.innerHTML = '<div class="status-icon">❓</div><div class="status-text" style="color:var(--danger);font-size:15px;">' + msg.replace(/\n/g,'<br>') + '</div>';
+  setTimeout(resetStatus, 4000);
+}
+
+// SCAN
+document.getElementById('qrInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') doScan();
+});
+
+function doScan() {
+  var id = document.getElementById('qrInput').value.trim().toUpperCase();
   if (!id) return;
 
-  const status = document.getElementById('scanStatus');
-  let icon, text, sub, cls;
+  var el = document.getElementById('scanStatus');
+  var icon, text, sub, cls;
 
   if (!db[id]) {
     icon = '❓'; text = '未登録のQR'; sub = id; cls = 'ng';
     addLog(id, 'NG', '未登録');
   } else if (db[id].used) {
-    icon = '✕'; text = '使用済み — NG'; sub = `使用日時: ${db[id].usedAt}`;
-    cls = 'ng';
+    icon = '✕'; text = '使用済み — NG'; sub = '使用日時: ' + db[id].usedAt; cls = 'ng';
     addLog(id, 'NG', '使用済み');
   } else {
     db[id].used = true;
-    db[id].usedAt = now();
-    icon = '✓'; text = 'OK — ドリンク提供可'; sub = id;
-    cls = 'ok';
+    db[id].usedAt = nowStr();
+    icon = '✓'; text = 'OK — ドリンク提供可'; sub = id; cls = 'ok';
     addLog(id, 'OK', '');
   }
 
-  status.className = 'scan-status ' + cls;
-  status.innerHTML = `<div class="status-icon">${icon}</div>
-    <div class="status-text" style="color:${cls==='ok'?'var(--accent)':'var(--danger)'}">${text}</div>
-    <div class="status-sub">${sub}</div>`;
+  el.className = 'scan-status ' + cls;
+  el.innerHTML =
+    '<div class="status-icon">' + icon + '</div>' +
+    '<div class="status-text" style="color:' + (cls==='ok'?'var(--accent)':'var(--danger)') + '">' + text + '</div>' +
+    '<div class="status-sub">' + sub + '</div>';
 
   document.getElementById('qrInput').value = '';
   updateStats();
+  setTimeout(resetStatus, 3000);
+}
 
-  // Reset status after 3s
-  setTimeout(() => {
-    status.className = 'scan-status';
-    status.innerHTML = `<div class="status-icon">📷</div>
-      <div class="status-text" style="font-size:18px;color:var(--text-muted);">QRコードをスキャン</div>
-      <div class="status-sub">カメラまたは手動入力で読み取り</div>`;
-  }, 3000);
+function resetStatus() {
+  var el = document.getElementById('scanStatus');
+  if (el) {
+    el.className = 'scan-status';
+    el.innerHTML = '<div class="status-icon">📷</div><div class="status-text" style="font-size:18px;color:var(--muted)">QRコードをスキャン</div><div class="status-sub">カメラで撮影または手動入力</div>';
+  }
 }
 
 function addLog(id, result, note) {
-  scanLog.unshift({ id, result, note, time: now() });
+  scanLog.unshift({id:id, result:result, note:note, time:nowStr()});
   if (scanLog.length > 20) scanLog.pop();
   renderLog();
 }
 
 function renderLog() {
-  const el = document.getElementById('logList');
-  if (scanLog.length === 0) {
-    el.innerHTML = `<div class="empty-state"><div class="empty-state-icon">🔍</div><div>まだスキャンがありません</div></div>`;
+  var el = document.getElementById('logList');
+  if (!scanLog.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div>まだスキャンがありません</div>';
     return;
   }
-  el.innerHTML = scanLog.slice(0, 10).map(l => `
-    <div class="log-item">
-      <div class="log-dot ${l.result.toLowerCase()}"></div>
-      <div class="log-id">${l.id}</div>
-      <div class="log-result ${l.result.toLowerCase()}">${l.result}${l.note ? ' · ' + l.note : ''}</div>
-      <div class="log-time">${l.time}</div>
-    </div>
-  `).join('');
+  el.innerHTML = scanLog.slice(0,10).map(function(l) {
+    return '<div class="log-item">' +
+      '<div class="log-dot ' + l.result.toLowerCase() + '"></div>' +
+      '<div class="log-id">' + l.id + '</div>' +
+      '<div class="log-result ' + l.result.toLowerCase() + '">' + l.result + (l.note?' · '+l.note:'') + '</div>' +
+      '<div class="log-time">' + l.time + '</div>' +
+      '</div>';
+  }).join('');
 }
 
 function updateStats() {
-  const total = Object.keys(db).length;
-  const used = Object.values(db).filter(v => v.used).length;
-  const unused = total - used;
-  const pct = total ? Math.round(used / total * 100) : 0;
-
-  document.getElementById('usedCount').textContent = used;
-  document.getElementById('unusedCount').textContent = unused;
-  document.getElementById('totalCount').textContent = total;
-  document.getElementById('progressPct').textContent = pct + '%';
-  document.getElementById('progressFill').style.width = pct + '%';
+  var total = Object.keys(db).length;
+  var used = Object.values(db).filter(function(v){return v.used;}).length;
+  document.getElementById('cntUsed').textContent = used;
+  document.getElementById('cntUnused').textContent = total - used;
+  document.getElementById('cntTotal').textContent = total;
+  var pct = total ? Math.round(used/total*100) : 0;
+  document.getElementById('pctLabel').textContent = pct + '%';
+  document.getElementById('pctBar').style.width = pct + '%';
 }
 
-// ===== SETUP =====
+// SETUP
 function generateQRs() {
-  const name = document.getElementById('eventName').value.trim();
-  const count = parseInt(document.getElementById('issueCount').value);
-  const prefix = document.getElementById('idPrefix').value.trim().toUpperCase() || 'EVT';
+  var name = document.getElementById('eventName').value.trim();
+  var count = parseInt(document.getElementById('issueCount').value);
+  var prefix = document.getElementById('idPrefix').value.trim().toUpperCase() || 'EVT';
 
   if (!name) { alert('イベント名を入力してください'); return; }
   if (!count || count < 1) { alert('発行枚数を入力してください'); return; }
-  if (count > 5000) { alert('一度に発行できるのは5000枚までです'); return; }
+  if (count > 5000) { alert('5000枚以内で入力してください'); return; }
 
-  // Generate DB
   db = {};
-  for (let i = 1; i <= count; i++) {
-    const id = `${prefix}-${String(i).padStart(4, '0')}`;
+  for (var i = 1; i <= count; i++) {
+    var id = prefix + '-' + String(i).padStart(4,'0');
     db[id] = { used: false, usedAt: null };
   }
 
-  // Preview
-  const grid = document.getElementById('qrPreviewGrid');
+  var grid = document.getElementById('qrGrid');
   grid.innerHTML = '';
-  const preview = Object.keys(db).slice(0, 8);
-
-  preview.forEach(id => {
-    const wrap = document.createElement('div');
-    wrap.className = 'qr-preview-item';
-    const qrDiv = document.createElement('div');
-    const label = document.createElement('div');
-    label.className = 'qr-preview-label';
-    label.textContent = id;
-    wrap.appendChild(qrDiv);
-    wrap.appendChild(label);
-    grid.appendChild(wrap);
-
-    new QRCode(qrDiv, {
-      text: id,
-      width: 72,
-      height: 72,
-      colorDark: '#000',
-      colorLight: '#fff',
-    });
+  Object.keys(db).slice(0,8).forEach(function(id) {
+    var cell = document.createElement('div');
+    cell.className = 'qr-cell';
+    var qrDiv = document.createElement('div');
+    var lbl = document.createElement('div');
+    lbl.className = 'qr-cell-label';
+    lbl.textContent = id;
+    cell.appendChild(qrDiv);
+    cell.appendChild(lbl);
+    grid.appendChild(cell);
+    new QRCode(qrDiv, {text:id, width:72, height:72, colorDark:'#000', colorLight:'#fff'});
   });
 
   document.getElementById('previewCard').style.display = 'block';
   updateStats();
-  alert(`✅ ${count}枚のQRコードを発行しました！\nスキャン画面で動作確認できます。`);
+  alert('✅ ' + count + '枚のQRコードを発行しました！');
 }
 
 function exportCSV() {
-  const rows = [['QR_ID', '使用済み', '使用日時']];
-  Object.entries(db).forEach(([id, v]) => {
-    rows.push([id, v.used ? '済' : '未', v.usedAt || '']);
+  var rows = [['QR_ID','使用済み','使用日時']];
+  Object.keys(db).forEach(function(id) {
+    var v = db[id];
+    rows.push([id, v.used?'済':'未', v.usedAt||'']);
   });
-  const csv = rows.map(r => r.join(',')).join('\n');
-  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-  const a = document.createElement('a');
+  var csv = rows.map(function(r){return r.join(',');}).join('\n');
+  var blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+  var a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `drinkpass_${Date.now()}.csv`;
+  a.download = 'drinkpass_' + Date.now() + '.csv';
   a.click();
 }
 
-// ===== ADMIN =====
-function renderAdminTable() {
-  const q = document.getElementById('searchInput').value.trim().toUpperCase();
-  const tbody = document.getElementById('adminTableBody');
-  const keys = Object.keys(db).filter(id => !q || id.includes(q));
-
-  if (keys.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="3"><div class="empty-state"><div class="empty-state-icon">📋</div><div>${Object.keys(db).length === 0 ? '発行設定でQRを発行してください' : '該当なし'}</div></div></td></tr>`;
+// ADMIN
+function renderTable() {
+  var q = document.getElementById('searchInput').value.trim().toUpperCase();
+  var keys = Object.keys(db).filter(function(id){return !q||id.includes(q);});
+  var body = document.getElementById('adminBody');
+  if (!keys.length) {
+    body.innerHTML = '<tr><td colspan="3"><div class="empty-state"><div class="empty-icon">📋</div>' +
+      (Object.keys(db).length===0?'発行設定でQRを発行してください':'該当なし') + '</div></td></tr>';
     return;
   }
-
-  tbody.innerHTML = keys.slice(0, 200).map(id => {
-    const v = db[id];
-    return `<tr>
-      <td style="font-family:'Syne',sans-serif;font-weight:700;">${id}</td>
-      <td><span class="badge ${v.used ? 'badge-used' : 'badge-unused'}">${v.used ? '使用済' : '未使用'}</span></td>
-      <td style="font-size:12px;color:var(--text-muted);">${v.usedAt || '—'}</td>
-    </tr>`;
+  body.innerHTML = keys.slice(0,200).map(function(id) {
+    var v = db[id];
+    return '<tr>' +
+      '<td style="font-family:Syne,sans-serif;font-weight:700">' + id + '</td>' +
+      '<td><span class="badge ' + (v.used?'badge-used':'badge-unused') + '">' + (v.used?'使用済':'未使用') + '</span></td>' +
+      '<td style="font-size:12px;color:var(--muted)">' + (v.usedAt||'—') + '</td>' +
+      '</tr>';
   }).join('');
 }
 
 function resetAll() {
-  if (!confirm('全データをリセットしますか？この操作は取り消せません。')) return;
-  db = {};
-  scanLog = [];
-  renderLog();
-  updateStats();
-  renderAdminTable();
+  if (!confirm('全データをリセットしますか？')) return;
+  db = {}; scanLog = [];
+  renderLog(); updateStats(); renderTable();
   document.getElementById('previewCard').style.display = 'none';
   alert('リセットしました');
 }
 
-// ===== CAMERA =====
-let cameraStream = null;
-let scanInterval = null;
-let barcodeDetector = null;
-
-// ===== CAMERA / FILE INPUT =====
-let cameraStream = null;
-let scanInterval = null;
-let barcodeDetector = null;
-
-function startCamera() {
-  document.getElementById('cameraWrap').style.display = 'block';
-}
-
-function stopCamera() {
-  document.getElementById('cameraWrap').style.display = 'none';
-  document.getElementById('cameraFileInput').value = '';
-}
-
-async function handleImageFile(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-
-  const statusEl = document.getElementById('scanStatus');
-  statusEl.className = 'scan-status';
-  statusEl.innerHTML = `<div class="status-icon">⏳</div><div class="status-text" style="font-size:18px;color:var(--text-muted);">読み取り中...</div>`;
-
-  try {
-    // 画像をBitmapに変換してBarcodeDetectorで読む
-    const bitmap = await createImageBitmap(file);
-
-    if ('BarcodeDetector' in window) {
-      const detector = new BarcodeDetector({ formats: ['qr_code'] });
-      const codes = await detector.detect(bitmap);
-      if (codes.length > 0) {
-        document.getElementById('qrInput').value = codes[0].rawValue;
-        stopCamera();
-        handleScan();
-        return;
-      }
-    }
-
-    // フォールバック: Canvasに描画してデータURIで確認
-    const canvas = document.createElement('canvas');
-    canvas.width = bitmap.width;
-    canvas.height = bitmap.height;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(bitmap, 0, 0);
-
-    // QRコードが読めなかった場合
-    stopCamera();
-    statusEl.className = 'scan-status ng';
-    statusEl.innerHTML = `<div class="status-icon">❓</div>
-      <div class="status-text" style="color:var(--danger)">QRを認識できません</div>
-      <div class="status-sub">明るい場所でQRコード全体が映るよう撮影してください</div>`;
-    setTimeout(() => {
-      statusEl.className = 'scan-status';
-      statusEl.innerHTML = `<div class="status-icon">📷</div>
-        <div class="status-text" style="font-size:18px;color:var(--text-muted);">QRコードをスキャン</div>
-        <div class="status-sub">カメラまたは手動入力で読み取り</div>`;
-    }, 3000);
-
-  } catch(e) {
-    stopCamera();
-    alert('読み取りエラー: ' + e.message);
-  }
-}
-
-// ===== UTIL =====
-function now() {
-  return new Date().toLocaleString('ja-JP', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' });
+function nowStr() {
+  return new Date().toLocaleString('ja-JP',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});
 }
 
 updateStats();
