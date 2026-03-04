@@ -3,15 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>DrinkPass v1.8.0 — スタッフ画面</title>
+<title>DrinkPass v1.8.1 — スタッフ画面</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
-<!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getFirestore, doc, setDoc, getDoc, collection, getDocs, onSnapshot, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-  // ===== Firebase設定 =====
   const firebaseConfig = {
     apiKey: "AIzaSyC4X70XRiqXeGKRf5J1cVFUHz6qxqTRkwc",
     authDomain: "drinkpass-ef3df.firebaseapp.com",
@@ -20,13 +17,9 @@
     messagingSenderId: "1010543853891",
     appId: "1:1010543853891:web:68dd38400e019175f0aff6"
   };
-
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
-
-  // グローバルに公開
   window._fs = { db, doc, setDoc, getDoc, collection, getDocs, onSnapshot, deleteDoc, writeBatch };
-  window._fsReady = true;
   document.dispatchEvent(new Event('firebase-ready'));
 </script>
 <style>
@@ -46,49 +39,44 @@
   .page.active{display:block;}
   .logo{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;padding:18px 16px 0;max-width:600px;margin:0 auto;}
   .logo span{color:var(--accent);}
-
-  /* 接続状態 */
   .conn-bar{display:flex;align-items:center;gap:8px;padding:8px 16px;max-width:600px;margin:0 auto;font-size:12px;color:var(--muted);}
   .conn-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;}
   .conn-dot.ok{background:var(--accent);}
   .conn-dot.ng{background:var(--danger);}
-
-  .scan-status{background:var(--surface2);border:1px solid var(--border);border-radius:16px;padding:28px 20px;text-align:center;margin-bottom:20px;min-height:160px;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:all .3s;}
-  .scan-status.ok{border-color:var(--accent);box-shadow:0 0 30px rgba(0,229,160,.3);}
-  .scan-status.ng{border-color:var(--danger);box-shadow:0 0 30px rgba(255,59,92,.3);}
-  .status-icon{font-size:48px;margin-bottom:10px;}
-  .status-text{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;}
-  .status-sub{font-size:12px;color:var(--muted);margin-top:6px;}
-
+  .cam-btn{width:100%;padding:28px 20px;margin-bottom:14px;background:var(--surface2);border:1px solid var(--border);border-radius:16px;display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;transition:all .2s;}
+  .cam-btn.active{border-color:var(--danger);background:rgba(255,59,92,.1);}
+  .cam-btn-icon{font-size:48px;line-height:1;}
+  .cam-btn-label{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--text);}
+  .cam-btn-sub{font-size:12px;color:var(--muted);}
   .camera-view{display:none;margin-bottom:16px;border-radius:16px;overflow:hidden;position:relative;background:#000;}
   .camera-view video{width:100%;display:block;max-height:280px;object-fit:cover;}
   .scan-frame{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;}
   .scan-frame-inner{width:200px;height:200px;border:2px solid var(--accent);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,.5);}
   .scan-hint{position:absolute;bottom:10px;left:0;right:0;text-align:center;font-size:12px;color:rgba(255,255,255,.7);}
   .close-cam{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.6);border:none;color:#fff;border-radius:50%;width:34px;height:34px;font-size:16px;cursor:pointer;}
-
+  .scan-status{background:var(--surface2);border:1px solid var(--border);border-radius:16px;padding:28px 20px;text-align:center;margin-bottom:20px;min-height:140px;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:all .3s;}
+  .scan-status.ok{border-color:var(--accent);box-shadow:0 0 30px rgba(0,229,160,.3);}
+  .scan-status.ng{border-color:var(--danger);box-shadow:0 0 30px rgba(255,59,92,.3);}
+  .status-text{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;}
+  .status-sub{font-size:12px;color:var(--muted);margin-top:6px;}
+  .status-wait{font-size:15px;color:var(--muted);font-weight:400;}
   .input-group{display:flex;gap:10px;margin-bottom:12px;}
   .qr-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;color:var(--text);font-size:14px;outline:none;transition:border-color .2s;}
   .qr-input:focus{border-color:var(--accent);}
   .qr-input::placeholder{color:var(--muted);}
-  .hint{font-size:12px;color:var(--muted);text-align:center;margin-bottom:20px;}
-
   .btn{padding:14px 18px;border-radius:10px;border:none;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;transition:all .15s;}
   .btn-primary{background:var(--accent);color:#000;}
   .btn-primary:active{opacity:.75;}
   .btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
   .btn-danger{background:var(--danger);color:#fff;}
-
   .stats-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px;}
   .stat-card{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px 10px;text-align:center;}
   .stat-value{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;}
   .stat-label{font-size:11px;color:var(--muted);margin-top:3px;}
-
   .progress-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:20px;}
   .progress-label{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:8px;}
   .progress-bar{height:6px;background:var(--border);border-radius:99px;overflow:hidden;}
   .progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),#00b4d8);border-radius:99px;transition:width .5s ease;}
-
   .section-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--muted);margin-bottom:10px;text-transform:uppercase;}
   .log-list{display:flex;flex-direction:column;gap:8px;}
   .log-item{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 14px;display:flex;align-items:center;gap:10px;}
@@ -102,7 +90,6 @@
   .log-time{font-size:11px;color:var(--muted);}
   .empty-state{text-align:center;padding:40px 20px;color:var(--muted);}
   .empty-icon{font-size:36px;margin-bottom:10px;}
-
   .setup-card{background:var(--surface2);border:1px solid var(--border);border-radius:16px;padding:22px;margin-bottom:14px;}
   .setup-card h3{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:14px;color:var(--accent);}
   .form-row{margin-bottom:12px;}
@@ -113,7 +100,6 @@
   .qr-cell{background:white;border-radius:6px;padding:4px;text-align:center;}
   .qr-cell canvas{width:100%!important;height:auto!important;}
   .qr-cell-label{font-size:8px;color:#333;margin-top:2px;}
-
   .search-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;color:var(--text);font-size:14px;outline:none;margin-bottom:10px;transition:border-color .2s;}
   .search-input:focus{border-color:var(--accent);}
   .search-input::placeholder{color:var(--muted);}
@@ -121,23 +107,24 @@
   table{width:100%;border-collapse:collapse;}
   th{background:var(--surface);padding:11px 14px;text-align:left;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;}
   td{padding:10px 14px;font-size:13px;border-top:1px solid var(--border);}
-  .badge{display:inline-block;padding:3px 8px;border-radius:99px;font-size:11px;font-weight:700;}
-  .badge-used{background:rgba(0,229,160,.15);color:var(--accent);cursor:pointer;transition:all .15s;}
+  .badge{display:inline-block;padding:3px 8px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;}
+  .badge:active{transform:scale(.95);}
+  .badge-used{background:rgba(0,229,160,.15);color:var(--accent);}
   .badge-used:hover{background:rgba(0,229,160,.3);}
-  .badge-used:active{transform:scale(.95);}
-  .badge-unused{background:rgba(107,107,138,.2);color:var(--muted);cursor:pointer;transition:all .15s;}
+  .badge-unused{background:rgba(107,107,138,.2);color:var(--muted);}
   .badge-unused:hover{background:rgba(107,107,138,.35);}
-  .badge-unused:active{transform:scale(.95);}
-  .badge-void{background:rgba(255,107,53,.15);color:var(--accent2);cursor:pointer;transition:all .15s;}
+  .badge-void{background:rgba(255,107,53,.15);color:var(--accent2);}
   .badge-void:hover{background:rgba(255,107,53,.3);}
-  .badge-void:active{transform:scale(.95);}
   .tag{display:inline-block;background:rgba(0,229,160,.1);color:var(--accent);border:1px solid rgba(0,229,160,.3);border-radius:6px;font-size:11px;font-family:'Syne',sans-serif;font-weight:700;padding:2px 8px;margin-bottom:14px;}
   .divider{height:1px;background:var(--border);margin:16px 0;}
 </style>
 </head>
 <body>
 
-<div class="logo">Drink<span>Pass</span> <span style="font-size:11px;font-weight:400;color:var(--muted);">v1.8.0</span><span style="font-family:'Arial Black',sans-serif;font-size:11px;font-weight:900;color:var(--muted);margin-left:10px;letter-spacing:0.03em;">GiG-BAND.COM</span></div>
+<div class="logo">Drink<span>Pass</span>
+  <span style="font-size:11px;font-weight:400;color:var(--muted);">v1.8.1</span>
+  <span style="font-family:'Arial Black',sans-serif;font-size:11px;font-weight:900;color:var(--muted);margin-left:10px;letter-spacing:0.03em;">GiG-BAND.COM</span>
+</div>
 <div class="conn-bar"><div class="conn-dot" id="connDot"></div><span id="connLabel">Firebase接続中...</span></div>
 
 <div class="tab-bar">
@@ -148,34 +135,23 @@
 
 <!-- SCAN -->
 <div id="page-scan" class="page active">
-
-  <!-- ① カメラボタン（最上部） -->
-  <button id="camBtn" onclick="toggleCamera()" style="
-    width:100%;padding:28px 20px;margin-bottom:14px;
-    background:var(--surface2);border:1px solid var(--border);border-radius:16px;
-    display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;transition:all .2s;">
-    <span style="font-size:48px;">📷</span>
-    <span style="font-family:Syne,sans-serif;font-size:16px;font-weight:700;color:var(--text);" id="camBtnLabel">カメラを起動する</span>
-    <span style="font-size:12px;color:var(--muted);">QRコードを枠内に合わせると自動判定</span>
+  <button class="cam-btn" id="camBtn" onclick="toggleCamera()">
+    <span class="cam-btn-icon">📷</span>
+    <span class="cam-btn-label" id="camBtnLabel">カメラを起動する</span>
+    <span class="cam-btn-sub">QRコードを枠内に合わせると自動判定</span>
   </button>
-
-  <!-- カメラプレビュー -->
   <div class="camera-view" id="cameraView">
     <video id="camVideo" autoplay playsinline muted></video>
     <div class="scan-frame"><div class="scan-frame-inner"></div></div>
     <div class="scan-hint">QRコードを枠内に合わせてください</div>
     <button class="close-cam" onclick="stopCamera()">✕</button>
   </div>
-
-  <!-- ② 判定結果エリア -->
   <div class="section-title" style="margin-top:4px;">判定結果</div>
   <div class="scan-status" id="scanStatus">
-    <div class="status-text" style="font-size:15px;color:var(--muted);font-family:'Noto Sans JP',sans-serif;font-weight:400;">スキャン待機中</div>
+    <div class="status-wait">スキャン待機中</div>
     <div class="status-sub">QRを読み取ると結果がここに表示されます</div>
   </div>
-
-  <!-- 手動入力（使用頻度低・下部配置） -->
-  <div class="section-title" style="margin-top:8px;">手動入力</div>
+  <div class="section-title" style="margin-top:4px;">手動入力</div>
   <div class="input-group">
     <input class="qr-input" id="qrInput" placeholder="QR IDを直接入力..." autocomplete="off">
     <button class="btn btn-primary" onclick="doScan()">判定</button>
@@ -219,14 +195,14 @@
   <div class="table-wrap">
     <table>
       <thead><tr><th>QR ID</th><th>ステータス</th><th>使用日時</th><th>無効化</th></tr></thead>
-      <tbody id="adminBody"><tr><td colspan="3"><div class="empty-state"><div class="empty-icon">📋</div>発行設定でQRを発行してください</div></td></tr></tbody>
+      <tbody id="adminBody"><tr><td colspan="4"><div class="empty-state"><div class="empty-icon">📋</div>発行設定でQRを発行してください</div></td></tr></tbody>
     </table>
   </div>
   <div style="text-align:center;"><button class="btn btn-danger" onclick="resetAll()">🗑 全データリセット</button></div>
 </div>
 
 <script>
-// DrinkPass v1.8.0
+// DrinkPass v1.8.1
 // v1.0.0 - 初版リリース
 // v1.0.1 - OK音チャイム2音・NG音連続ブザーに変更
 // v1.1.0 - お客様表示画面（display.html）連携追加
@@ -234,7 +210,7 @@
 // v1.3.0 - 管理画面リアルタイム同期・display音声・SorryデザインをNGテーマに変更
 // v1.4.0 - 管理画面でステータス手動切り替え機能追加
 // v1.5.0 - カメラボタン大型化・QR無効化機能追加
-// v1.6.0 - スキャン画面レイアウト整理（カメラボタン最上部・結果エリア明確化）
+// v1.6.0 - スキャン画面レイアウト整理
 // v1.7.0 - 手動入力欄を判定結果の下に移動
 // v1.8.0 - 判定後の背景色修正・GiG-BAND.COMブランド追加
 
@@ -242,53 +218,37 @@ var localDb = {};
 var scanLog = [];
 var codeReader = null;
 var cameraActive = false;
-var fsReady = false;
 
-// Firebase準備完了待ち
 document.addEventListener('firebase-ready', function() {
-  fsReady = true;
   document.getElementById('connDot').className = 'conn-dot ok';
   document.getElementById('connLabel').textContent = 'Firebase接続済み';
   loadFromFirestore();
 });
 
-// ===== Firestore操作 =====
 function loadFromFirestore() {
-  try {
-    var fs = window._fs;
-    // onSnapshotでリアルタイム監視 → 全端末の管理画面が自動同期
-    fs.onSnapshot(fs.collection(fs.db, 'qrcodes'), function(snap) {
-      localDb = {};
-      snap.forEach(function(d) { localDb[d.id] = d.data(); });
-      updateStats();
-      renderTable();
-    }, function(e) {
-      console.error('snapshot error', e);
-    });
-  } catch(e) {
-    console.error('load error', e);
-  }
+  var fs = window._fs;
+  fs.onSnapshot(fs.collection(fs.db, 'qrcodes'), function(snap) {
+    localDb = {};
+    snap.forEach(function(d) { localDb[d.id] = d.data(); });
+    updateStats();
+    renderTable();
+  });
 }
 
 async function saveToFirestore(id, data) {
   try {
     var fs = window._fs;
     await fs.setDoc(fs.doc(fs.db, 'qrcodes', id), data);
-  } catch(e) {
-    console.error('save error', e);
-  }
+  } catch(e) { console.error(e); }
 }
 
 async function broadcastResult(payload) {
   try {
     var fs = window._fs;
     await fs.setDoc(fs.doc(fs.db, 'display', 'latest'), payload);
-  } catch(e) {
-    console.error('broadcast error', e);
-  }
+  } catch(e) { console.error(e); }
 }
 
-// ===== TABS =====
 function switchTab(name) {
   ['scan','setup','admin'].forEach(function(n) {
     document.getElementById('page-'+n).classList.remove('active');
@@ -297,39 +257,36 @@ function switchTab(name) {
   document.getElementById('page-'+name).classList.add('active');
   document.getElementById('tab-'+name).classList.add('active');
   if (name !== 'scan') stopCamera();
-  if (name === 'admin') renderTable();
 }
 
-// ===== CAMERA =====
 function toggleCamera() {
   if (cameraActive) stopCamera(); else startCamera();
 }
 
 function startCamera() {
-  if (typeof ZXing === 'undefined') { alert('スキャンライブラリの読み込みに失敗しました。ページを再読み込みしてください。'); return; }
+  if (typeof ZXing === 'undefined') { alert('ライブラリ読み込みエラー。再読み込みしてください。'); return; }
   codeReader = new ZXing.BrowserQRCodeReader();
   codeReader.decodeFromVideoDevice(null, 'camVideo', function(result, err) {
-    if (result) { document.getElementById('qrInput').value = result.getText(); stopCamera(); doScan(); }
+    if (result) {
+      document.getElementById('qrInput').value = result.getText();
+      stopCamera();
+      doScan();
+    }
   });
   document.getElementById('cameraView').style.display = 'block';
-  var btn = document.getElementById('camBtn');
+  document.getElementById('camBtn').classList.add('active');
   document.getElementById('camBtnLabel').textContent = '⏹ カメラを停止する';
-  btn.style.borderColor = 'var(--danger)';
-  btn.style.background = 'rgba(255,59,92,.1)';
   cameraActive = true;
 }
 
 function stopCamera() {
   if (codeReader) { try { codeReader.reset(); } catch(e) {} codeReader = null; }
   document.getElementById('cameraView').style.display = 'none';
-  var btn = document.getElementById('camBtn');
+  document.getElementById('camBtn').classList.remove('active');
   document.getElementById('camBtnLabel').textContent = 'カメラを起動する';
-  btn.style.borderColor = '';
-  btn.style.background = '';
   cameraActive = false;
 }
 
-// ===== SOUND =====
 var audioCtx = null;
 function getAudioCtx() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -341,7 +298,7 @@ function playOK() {
     [0, 0.2].forEach(function(d, i) {
       var o = c.createOscillator(), g = c.createGain();
       o.connect(g); g.connect(c.destination);
-      o.type = 'sine'; o.frequency.value = i===0 ? 880 : 1320;
+      o.type = 'sine'; o.frequency.value = i === 0 ? 880 : 1320;
       g.gain.setValueAtTime(0.9, c.currentTime+d);
       g.gain.exponentialRampToValueAtTime(0.001, c.currentTime+d+0.4);
       o.start(c.currentTime+d); o.stop(c.currentTime+d+0.4);
@@ -362,7 +319,6 @@ function playNG() {
   } catch(e) {}
 }
 
-// ===== SCAN =====
 document.getElementById('qrInput').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') doScan();
 });
@@ -370,44 +326,44 @@ document.getElementById('qrInput').addEventListener('keydown', function(e) {
 async function doScan() {
   var id = document.getElementById('qrInput').value.trim().toUpperCase();
   if (!id) return;
-
   var el = document.getElementById('scanStatus');
   var icon, text, sub, cls, note, remaining;
 
   if (!localDb[id]) {
-    icon='❓'; text='未登録のQR'; sub=id; cls='ng'; note='未登録';
-    addLog(id,'NG','未登録'); playNG();
+    icon = '❓'; text = '未登録のQR'; sub = id; cls = 'ng'; note = '未登録';
+    addLog(id, 'NG', '未登録'); playNG();
   } else if (localDb[id].void) {
-    icon='🚫'; text='無効なQR — NG'; sub=id; cls='ng'; note='無効';
-    addLog(id,'NG','無効'); playNG();
+    icon = '🚫'; text = '無効なQR — NG'; sub = id; cls = 'ng'; note = '無効';
+    addLog(id, 'NG', '無効'); playNG();
   } else if (localDb[id].used) {
-    icon='✕'; text='使用済み — NG'; sub='使用日時: '+localDb[id].usedAt; cls='ng'; note='使用済み';
-    addLog(id,'NG','使用済み'); playNG();
+    icon = '✕'; text = '使用済み — NG'; sub = '使用日時: ' + localDb[id].usedAt; cls = 'ng'; note = '使用済み';
+    addLog(id, 'NG', '使用済み'); playNG();
   } else {
     localDb[id].used = true;
     localDb[id].usedAt = nowStr();
     var total = Object.keys(localDb).length;
-    var used = Object.values(localDb).filter(function(v){return v.used;}).length;
+    var used = Object.values(localDb).filter(function(v) { return v.used; }).length;
     remaining = total - used;
-    icon='✓'; text='OK — ドリンク提供可'; sub=id; cls='ok'; note='';
-    addLog(id,'OK',''); playOK();
-    // Firestoreに保存
+    icon = '✓'; text = 'OK — ドリンク提供可'; sub = id; cls = 'ok'; note = '';
+    addLog(id, 'OK', ''); playOK();
     await saveToFirestore(id, localDb[id]);
   }
 
-  el.className = 'scan-status '+cls;
-  el.style.background = '';
+  el.className = 'scan-status ' + cls;
+  el.style.background = 'var(--surface2)';
+  var markHtml = cls === 'ok'
+    ? '<div style="font-family:Syne,sans-serif;font-size:52px;font-weight:800;color:var(--accent);line-height:1;margin-bottom:8px;">◎</div>'
+    : '<div style="font-family:Syne,sans-serif;font-size:52px;font-weight:800;color:var(--danger);line-height:1;margin-bottom:8px;">✕</div>';
   el.innerHTML =
-    '<div class="status-icon">'+icon+'</div>'+
-    '<div class="status-text" style="color:'+(cls==='ok'?'var(--accent)':'var(--danger)')+'">'+text+'</div>'+
-    '<div class="status-sub">'+sub+'</div>';
+    markHtml +
+    '<div class="status-text" style="color:' + (cls === 'ok' ? 'var(--accent)' : 'var(--danger)') + '">' + text + '</div>' +
+    '<div class="status-sub">' + sub + '</div>';
 
   document.getElementById('qrInput').value = '';
   updateStats();
 
-  // お客様画面へFirestore経由で送信
   await broadcastResult({
-    result: cls==='ok' ? 'OK' : 'NG',
+    result: cls === 'ok' ? 'OK' : 'NG',
     id: id, note: note,
     remaining: remaining !== undefined ? remaining : null,
     timestamp: Date.now()
@@ -416,63 +372,64 @@ async function doScan() {
 
 function resetStatus() {
   var el = document.getElementById('scanStatus');
-  if (el) {
-    el.className = 'scan-status';
-    el.style.background = '';
-    el.style.color = '';
-    el.innerHTML =
-      '<div class="status-text" style="font-size:15px;color:var(--muted);font-family:'Noto Sans JP',sans-serif;font-weight:400;">スキャン待機中</div>' +
-      '<div class="status-sub">QRを読み取ると結果がここに表示されます</div>';
-  }
+  if (!el) return;
+  el.className = 'scan-status';
+  el.innerHTML = '<div class="status-wait">スキャン待機中</div><div class="status-sub">QRを読み取ると結果がここに表示されます</div>';
 }
 
 function addLog(id, result, note) {
-  scanLog.unshift({id:id, result:result, note:note, time:nowStr()});
+  scanLog.unshift({id: id, result: result, note: note, time: nowStr()});
   if (scanLog.length > 20) scanLog.pop();
   renderLog();
 }
 
 function renderLog() {
   var el = document.getElementById('logList');
-  if (!scanLog.length) { el.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div>まだスキャンがありません</div>'; return; }
-  el.innerHTML = scanLog.slice(0,10).map(function(l) {
-    return '<div class="log-item"><div class="log-dot '+l.result.toLowerCase()+'"></div><div class="log-id">'+l.id+'</div><div class="log-result '+l.result.toLowerCase()+'">'+l.result+(l.note?' · '+l.note:'')+'</div><div class="log-time">'+l.time+'</div></div>';
+  if (!scanLog.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div>まだスキャンがありません</div>';
+    return;
+  }
+  el.innerHTML = scanLog.slice(0, 10).map(function(l) {
+    return '<div class="log-item">' +
+      '<div class="log-dot ' + l.result.toLowerCase() + '"></div>' +
+      '<div class="log-id">' + l.id + '</div>' +
+      '<div class="log-result ' + l.result.toLowerCase() + '">' + l.result + (l.note ? ' · ' + l.note : '') + '</div>' +
+      '<div class="log-time">' + l.time + '</div>' +
+      '</div>';
   }).join('');
 }
 
 function updateStats() {
   var total = Object.keys(localDb).length;
-  var used = Object.values(localDb).filter(function(v){return v.used;}).length;
+  var used = Object.values(localDb).filter(function(v) { return v.used; }).length;
   document.getElementById('cntUsed').textContent = used;
-  document.getElementById('cntUnused').textContent = total-used;
+  document.getElementById('cntUnused').textContent = total - used;
   document.getElementById('cntTotal').textContent = total;
-  var pct = total ? Math.round(used/total*100) : 0;
-  document.getElementById('pctLabel').textContent = pct+'%';
-  document.getElementById('pctBar').style.width = pct+'%';
+  var pct = total ? Math.round(used / total * 100) : 0;
+  document.getElementById('pctLabel').textContent = pct + '%';
+  document.getElementById('pctBar').style.width = pct + '%';
 }
 
-// ===== SETUP =====
 async function generateQRs() {
   var name = document.getElementById('eventName').value.trim();
   var count = parseInt(document.getElementById('issueCount').value);
   var prefix = document.getElementById('idPrefix').value.trim().toUpperCase() || 'EVT';
   if (!name) { alert('イベント名を入力してください'); return; }
-  if (!count || count<1) { alert('発行枚数を入力してください'); return; }
-  if (count>5000) { alert('5000枚以内で入力してください'); return; }
-  if (!confirm(count+'枚のQRを発行してFirebaseに保存します。よろしいですか？')) return;
+  if (!count || count < 1) { alert('発行枚数を入力してください'); return; }
+  if (count > 5000) { alert('5000枚以内で入力してください'); return; }
+  if (!confirm(count + '枚のQRを発行してFirebaseに保存します。よろしいですか？')) return;
 
   localDb = {};
   var fs = window._fs;
   var batch = fs.writeBatch(fs.db);
   var batchCount = 0;
 
-  for (var i=1; i<=count; i++) {
-    var id = prefix+'-'+String(i).padStart(4,'0');
-    var data = {used:false, usedAt:null, event:name};
+  for (var i = 1; i <= count; i++) {
+    var id = prefix + '-' + String(i).padStart(4, '0');
+    var data = {used: false, usedAt: null, event: name, void: false};
     localDb[id] = data;
-    batch.set(fs.doc(fs.db,'qrcodes',id), data);
+    batch.set(fs.doc(fs.db, 'qrcodes', id), data);
     batchCount++;
-    // Firestoreのbatchは500件まで
     if (batchCount === 499) {
       await batch.commit();
       batch = fs.writeBatch(fs.db);
@@ -483,46 +440,48 @@ async function generateQRs() {
 
   var grid = document.getElementById('qrGrid');
   grid.innerHTML = '';
-  Object.keys(localDb).slice(0,8).forEach(function(id) {
-    var cell = document.createElement('div'); cell.className='qr-cell';
+  Object.keys(localDb).slice(0, 8).forEach(function(qid) {
+    var cell = document.createElement('div'); cell.className = 'qr-cell';
     var qrDiv = document.createElement('div');
-    var lbl = document.createElement('div'); lbl.className='qr-cell-label'; lbl.textContent=id;
+    var lbl = document.createElement('div'); lbl.className = 'qr-cell-label'; lbl.textContent = qid;
     cell.appendChild(qrDiv); cell.appendChild(lbl); grid.appendChild(cell);
-    new QRCode(qrDiv,{text:id,width:72,height:72,colorDark:'#000',colorLight:'#fff'});
+    new QRCode(qrDiv, {text: qid, width: 72, height: 72, colorDark: '#000', colorLight: '#fff'});
   });
 
-  document.getElementById('previewCard').style.display='block';
+  document.getElementById('previewCard').style.display = 'block';
   updateStats();
-  alert('✅ '+count+'枚のQRコードを発行しFirebaseに保存しました！');
+  alert('✅ ' + count + '枚のQRコードを発行しFirebaseに保存しました！');
 }
 
 function exportCSV() {
-  var rows=[['QR_ID','使用済み','使用日時','イベント']];
+  var rows = [['QR_ID', '使用済み', '使用日時', 'イベント']];
   Object.keys(localDb).forEach(function(id) {
-    var v=localDb[id];
-    rows.push([id,v.used?'済':'未',v.usedAt||'',v.event||'']);
+    var v = localDb[id];
+    rows.push([id, v.used ? '済' : '未', v.usedAt || '', v.event || '']);
   });
-  var csv=rows.map(function(r){return r.join(',');}).join('\n');
-  var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
-  var a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-  a.download='drinkpass_'+Date.now()+'.csv'; a.click();
+  var csv = rows.map(function(r) { return r.join(','); }).join('\n');
+  var blob = new Blob(['\uFEFF' + csv], {type: 'text/csv;charset=utf-8;'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'drinkpass_' + Date.now() + '.csv';
+  a.click();
 }
 
-// ===== ADMIN =====
 function renderTable() {
   var q = document.getElementById('searchInput').value.trim().toUpperCase();
-  var keys = Object.keys(localDb).filter(function(id){return !q||id.includes(q);});
+  var keys = Object.keys(localDb).filter(function(id) { return !q || id.includes(q); });
   var body = document.getElementById('adminBody');
   if (!keys.length) {
-    body.innerHTML='<tr><td colspan="3"><div class="empty-state"><div class="empty-icon">📋</div>'+(Object.keys(localDb).length===0?'発行設定でQRを発行してください':'該当なし')+'</div></td></tr>';
+    body.innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="empty-icon">📋</div>' +
+      (Object.keys(localDb).length === 0 ? '発行設定でQRを発行してください' : '該当なし') + '</div></td></tr>';
     return;
   }
-  body.innerHTML=keys.slice(0,200).map(function(id) {
-    var v=localDb[id];
+  body.innerHTML = keys.slice(0, 200).map(function(id) {
+    var v = localDb[id];
     var badgeCls = v.void ? 'badge-void' : (v.used ? 'badge-used' : 'badge-unused');
     var badgeTxt = v.void ? '無効' : (v.used ? '使用済' : '未使用');
-    var voidTxt = v.void ? '有効に戻す' : '無効にする';
-    var voidCls = v.void ? 'badge badge-unused' : 'badge badge-void';
+    var voidCls  = v.void ? 'badge badge-unused' : 'badge badge-void';
+    var voidTxt  = v.void ? '有効に戻す' : '無効にする';
     return '<tr' + (v.void ? ' style="opacity:.5"' : '') + '>' +
       '<td style="font-family:Syne,sans-serif;font-weight:700">' + id + '</td>' +
       '<td><span class="badge ' + badgeCls + '" data-id="' + id + '">' + badgeTxt + '</span></td>' +
@@ -530,7 +489,8 @@ function renderTable() {
       '<td><span class="' + voidCls + '" data-void-id="' + id + '">' + voidTxt + '</span></td>' +
       '</tr>';
   }).join('');
-  body.querySelectorAll('.badge[data-id]').forEach(function(el) {
+
+  body.querySelectorAll('[data-id]').forEach(function(el) {
     el.addEventListener('click', function() { toggleStatus(this.getAttribute('data-id')); });
   });
   body.querySelectorAll('[data-void-id]').forEach(function(el) {
@@ -540,11 +500,8 @@ function renderTable() {
 
 async function toggleStatus(id) {
   if (!localDb[id]) return;
-  var v = localDb[id];
-  var newUsed = !v.used;
-  var msg = newUsed
-    ? id + ' を「使用済」に変更しますか？'
-    : id + ' を「未使用」に戻しますか？';
+  var newUsed = !localDb[id].used;
+  var msg = newUsed ? id + ' を「使用済」に変更しますか？' : id + ' を「未使用」に戻しますか？';
   if (!confirm(msg)) return;
   localDb[id].used = newUsed;
   localDb[id].usedAt = newUsed ? nowStr() : null;
@@ -552,11 +509,9 @@ async function toggleStatus(id) {
   updateStats();
 }
 
-
 async function toggleVoid(id) {
   if (!localDb[id]) return;
-  var v = localDb[id];
-  var newVoid = !v.void;
+  var newVoid = !localDb[id].void;
   var msg = newVoid
     ? id + ' を無効にしますか？（スキャンしてもNG扱いになります）'
     : id + ' を有効に戻しますか？';
@@ -570,22 +525,22 @@ async function toggleVoid(id) {
 async function resetAll() {
   if (!confirm('全データをFirebaseからリセットしますか？この操作は取り消せません。')) return;
   var fs = window._fs;
-  var snap = await fs.getDocs(fs.collection(fs.db,'qrcodes'));
+  var snap = await fs.getDocs(fs.collection(fs.db, 'qrcodes'));
   var batch = fs.writeBatch(fs.db);
   var cnt = 0;
   snap.forEach(function(d) {
     batch.delete(d.ref); cnt++;
-    if (cnt===499) { batch.commit(); batch=fs.writeBatch(fs.db); cnt=0; }
+    if (cnt === 499) { batch.commit(); batch = fs.writeBatch(fs.db); cnt = 0; }
   });
-  if (cnt>0) await batch.commit();
-  localDb={}; scanLog=[];
+  if (cnt > 0) await batch.commit();
+  localDb = {}; scanLog = [];
   renderLog(); updateStats(); renderTable();
-  document.getElementById('previewCard').style.display='none';
+  document.getElementById('previewCard').style.display = 'none';
   alert('リセットしました');
 }
 
 function nowStr() {
-  return new Date().toLocaleString('ja-JP',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  return new Date().toLocaleString('ja-JP', {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit'});
 }
 
 updateStats();
