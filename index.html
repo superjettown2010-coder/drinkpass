@@ -290,6 +290,51 @@ function stopCamera() {
   cameraActive = false;
 }
 
+// SOUND
+var audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function playOK() {
+  try {
+    var ctx = getAudioCtx();
+    // 明るい2音（ピポッ）
+    [0, 0.12].forEach(function(delay, i) {
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = i === 0 ? 880 : 1100;
+      gain.gain.setValueAtTime(0.4, ctx.currentTime + delay);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.15);
+      osc.start(ctx.currentTime + delay);
+      osc.stop(ctx.currentTime + delay + 0.15);
+    });
+  } catch(e) {}
+}
+
+function playNG() {
+  try {
+    var ctx = getAudioCtx();
+    // 低い2音（ブブッ）
+    [0, 0.18].forEach(function(delay) {
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'square';
+      osc.frequency.value = 220;
+      gain.gain.setValueAtTime(0.3, ctx.currentTime + delay);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.2);
+      osc.start(ctx.currentTime + delay);
+      osc.stop(ctx.currentTime + delay + 0.2);
+    });
+  } catch(e) {}
+}
+
 // SCAN
 document.getElementById('qrInput').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') doScan();
@@ -305,14 +350,17 @@ function doScan() {
   if (!db[id]) {
     icon = '❓'; text = '未登録のQR'; sub = id; cls = 'ng';
     addLog(id, 'NG', '未登録');
+    playNG();
   } else if (db[id].used) {
     icon = '✕'; text = '使用済み — NG'; sub = '使用日時: ' + db[id].usedAt; cls = 'ng';
     addLog(id, 'NG', '使用済み');
+    playNG();
   } else {
     db[id].used = true;
     db[id].usedAt = nowStr();
     icon = '✓'; text = 'OK — ドリンク提供可'; sub = id; cls = 'ok';
     addLog(id, 'OK', '');
+    playOK();
   }
 
   el.className = 'scan-status ' + cls;
