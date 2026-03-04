@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>DrinkPass v1.3.0 — スタッフ画面</title>
+<title>DrinkPass v1.4.0 — スタッフ画面</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
 <!-- Firebase SDK -->
@@ -122,15 +122,19 @@
   th{background:var(--surface);padding:11px 14px;text-align:left;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;}
   td{padding:10px 14px;font-size:13px;border-top:1px solid var(--border);}
   .badge{display:inline-block;padding:3px 8px;border-radius:99px;font-size:11px;font-weight:700;}
-  .badge-used{background:rgba(0,229,160,.15);color:var(--accent);}
-  .badge-unused{background:rgba(107,107,138,.2);color:var(--muted);}
+  .badge-used{background:rgba(0,229,160,.15);color:var(--accent);cursor:pointer;transition:all .15s;}
+  .badge-used:hover{background:rgba(0,229,160,.3);}
+  .badge-used:active{transform:scale(.95);}
+  .badge-unused{background:rgba(107,107,138,.2);color:var(--muted);cursor:pointer;transition:all .15s;}
+  .badge-unused:hover{background:rgba(107,107,138,.35);}
+  .badge-unused:active{transform:scale(.95);}
   .tag{display:inline-block;background:rgba(0,229,160,.1);color:var(--accent);border:1px solid rgba(0,229,160,.3);border-radius:6px;font-size:11px;font-family:'Syne',sans-serif;font-weight:700;padding:2px 8px;margin-bottom:14px;}
   .divider{height:1px;background:var(--border);margin:16px 0;}
 </style>
 </head>
 <body>
 
-<div class="logo">Drink<span>Pass</span> <span style="font-size:11px;font-weight:400;color:var(--muted);">v1.3.0</span></div>
+<div class="logo">Drink<span>Pass</span> <span style="font-size:11px;font-weight:400;color:var(--muted);">v1.4.0</span></div>
 <div class="conn-bar"><div class="conn-dot" id="connDot"></div><span id="connLabel">Firebase接続中...</span></div>
 
 <div class="tab-bar">
@@ -204,12 +208,13 @@
 </div>
 
 <script>
-// DrinkPass v1.3.0
+// DrinkPass v1.4.0
 // v1.0.0 - 初版リリース
 // v1.0.1 - OK音チャイム2音・NG音連続ブザーに変更
 // v1.1.0 - お客様表示画面（display.html）連携追加
 // v1.2.0 - Firebase Firestore リアルタイム同期対応
 // v1.3.0 - 管理画面リアルタイム同期・display音声・SorryデザインをNGテーマに変更
+// v1.4.0 - 管理画面でステータス手動切り替え機能追加
 
 var localDb = {};
 var scanLog = [];
@@ -482,8 +487,29 @@ function renderTable() {
   }
   body.innerHTML=keys.slice(0,200).map(function(id) {
     var v=localDb[id];
-    return '<tr><td style="font-family:Syne,sans-serif;font-weight:700">'+id+'</td><td><span class="badge '+(v.used?'badge-used':'badge-unused')+'">'+(v.used?'使用済':'未使用')+'</span></td><td style="font-size:12px;color:var(--muted)">'+(v.usedAt||'—')+'</td></tr>';
+    var badgeCls = v.used ? 'badge-used' : 'badge-unused';
+    var badgeTxt = v.used ? '使用済' : '未使用';
+    var badgeTitle = v.used ? 'タップで未使用に戻す' : 'タップで使用済にする';
+    return '<tr>' +
+      '<td style="font-family:Syne,sans-serif;font-weight:700">'+id+'</td>' +
+      '<td><span class="badge '+badgeCls+'" title="'+badgeTitle+'" onclick="toggleStatus(''+id+'')">'+badgeTxt+'</span></td>' +
+      '<td style="font-size:12px;color:var(--muted)">'+(v.usedAt||'—')+'</td>' +
+      '</tr>';
   }).join('');
+}
+
+async function toggleStatus(id) {
+  if (!localDb[id]) return;
+  var v = localDb[id];
+  var newUsed = !v.used;
+  var msg = newUsed
+    ? id + ' を「使用済」に変更しますか？'
+    : id + ' を「未使用」に戻しますか？';
+  if (!confirm(msg)) return;
+  localDb[id].used = newUsed;
+  localDb[id].usedAt = newUsed ? nowStr() : null;
+  await saveToFirestore(id, localDb[id]);
+  updateStats();
 }
 
 async function resetAll() {
