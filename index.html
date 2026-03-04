@@ -300,38 +300,49 @@ function getAudioCtx() {
 function playOK() {
   try {
     var ctx = getAudioCtx();
-    // 明るい2音（ピポッ）
-    [0, 0.12].forEach(function(delay, i) {
-      var osc = ctx.createOscillator();
-      var gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = 'sine';
-      osc.frequency.value = i === 0 ? 880 : 1100;
-      gain.gain.setValueAtTime(0.4, ctx.currentTime + delay);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.15);
-      osc.start(ctx.currentTime + delay);
-      osc.stop(ctx.currentTime + delay + 0.15);
-    });
+    // レジ・決済音：短くシャープな高音「ピッ」
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(1400, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(1600, ctx.currentTime + 0.06);
+    gain.gain.setValueAtTime(0.9, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.12);
   } catch(e) {}
 }
 
 function playNG() {
   try {
     var ctx = getAudioCtx();
-    // 低い2音（ブブッ）
-    [0, 0.18].forEach(function(delay) {
-      var osc = ctx.createOscillator();
-      var gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = 'square';
-      osc.frequency.value = 220;
-      gain.gain.setValueAtTime(0.3, ctx.currentTime + delay);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.2);
-      osc.start(ctx.currentTime + delay);
-      osc.stop(ctx.currentTime + delay + 0.2);
-    });
+    // ブザー音：低くこもった「ブー」を0.6秒
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    // 歪み感を出すためsawwave
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(160, ctx.currentTime);
+
+    // ブザーらしいトレモロ（振動感）
+    var lfo = ctx.createOscillator();
+    var lfoGain = ctx.createGain();
+    lfo.frequency.value = 30;
+    lfoGain.gain.value = 40;
+    lfo.connect(lfoGain);
+    lfoGain.connect(osc.frequency);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(0.85, ctx.currentTime);
+    gain.gain.setValueAtTime(0.85, ctx.currentTime + 0.55);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.65);
+
+    lfo.start(ctx.currentTime);
+    lfo.stop(ctx.currentTime + 0.65);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.65);
   } catch(e) {}
 }
 
