@@ -458,7 +458,7 @@
       <div style="width:180px;height:180px;border:2px solid var(--accent);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,0.45);"></div>
     </div>
     <button onclick="stopCamera()" style="position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.6);border:none;color:#fff;border-radius:50%;width:36px;height:36px;font-size:18px;cursor:pointer;">✕</button>
-    <div style="position:absolute;bottom:12px;left:0;right:0;text-align:center;font-size:12px;color:rgba(255,255,255,0.7);">QRコードを枠内に合わせてください</div>
+    <div id="debugOverlay" style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.75);padding:8px 12px;font-size:11px;color:#0f0;font-family:monospace;line-height:1.6;">起動中...</div>
   </div>
 
   <div class="input-group">
@@ -762,19 +762,27 @@ let cameraStream = null;
 let scanInterval = null;
 let barcodeDetector = null;
 
+let debugCount = 0;
+function dbg(msg) {
+  const el = document.getElementById('debugOverlay');
+  if (el) el.innerHTML = msg;
+}
+
 async function startCamera() {
   const wrap = document.getElementById('cameraWrap');
   const video = document.getElementById('cameraVideo');
 
-  // BarcodeDetector対応チェック（iOS17+ Safari / Chrome対応）
   if ('BarcodeDetector' in window) {
     try {
       barcodeDetector = new BarcodeDetector({ formats: ['qr_code'] });
+      dbg('🟢 BarcodeDetector 使用');
     } catch(e) {
       barcodeDetector = null;
+      dbg('🟡 BarcodeDetector 初期化失敗 → jsQR使用');
     }
   } else {
-    barcodeDetector = null; // jsQRフォールバックを使用
+    barcodeDetector = null;
+    dbg('🟡 BarcodeDetector 非対応 → jsQR使用');
   }
 
   try {
@@ -782,11 +790,14 @@ async function startCamera() {
       video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
     });
     video.srcObject = cameraStream;
-    video.onloadedmetadata = () => { video.play(); };
+    video.onloadedmetadata = () => {
+      video.play();
+      dbg(`📷 カメラ起動: ${video.videoWidth}x${video.videoHeight} / ${barcodeDetector ? 'BarcodeDetector' : 'jsQR'}`);
+    };
     wrap.style.display = 'block';
     scanInterval = setInterval(scanFrame, 200);
   } catch (e) {
-    alert('カメラにアクセスできませんでした。\nSafariの設定 → このWebサイト → カメラを「許可」にしてください。\n\n' + e.message);
+    alert('カメラにアクセスできませんでした。\n' + e.message);
   }
 }
 
@@ -798,18 +809,22 @@ function stopCamera() {
 
 async function scanFrame() {
   const video = document.getElementById('cameraVideo');
-  if (!video || video.readyState < 2 || video.paused || video.videoWidth === 0) return;
+  if (!video || video.readyState < 2 || video.paused || video.videoWidth === 0) {
+    dbg(`⏳ 待機中... readyState=${video?.readyState} w=${video?.videoWidth}`);
+    return;
+  }
 
+  debugCount++;
   try {
     if (barcodeDetector) {
       const codes = await barcodeDetector.detect(video);
+      dbg(`🔍 BarcodeDetector スキャン #${debugCount} → ${codes.length}件検出`);
       if (codes.length > 0) {
         document.getElementById('qrInput').value = codes[0].rawValue;
         stopCamera();
         handleScan();
       }
     } else {
-      // jsQRフォールバック（全iOSバージョン対応）
       const canvas = document.getElementById('cameraCanvas');
       const w = video.videoWidth;
       const h = video.videoHeight;
@@ -819,6 +834,7 @@ async function scanFrame() {
       ctx.drawImage(video, 0, 0, w, h);
       const imageData = ctx.getImageData(0, 0, w, h);
       const code = jsQR(imageData.data, w, h, { inversionAttempts: 'attemptBoth' });
+      dbg(`🔍 jsQR スキャン #${debugCount} ${w}x${h} → ${code ? '✅検出: ' + code.data : '未検出'}`);
       if (code && code.data) {
         document.getElementById('qrInput').value = code.data;
         stopCamera();
@@ -826,7 +842,7 @@ async function scanFrame() {
       }
     }
   } catch(e) {
-    // スキャン中のエラーは無視して継続
+    dbg(`❌ エラー: ${e.message}`);
   }
 }
 
