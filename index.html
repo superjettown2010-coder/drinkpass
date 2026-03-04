@@ -114,7 +114,7 @@
 </head>
 <body>
 
-<div class="logo">Drink<span>Pass</span> <span style="font-size:11px;font-weight:400;color:var(--muted);letter-spacing:0.05em;">v1.0.1</span></div>
+<div class="logo">Drink<span>Pass</span> <span style="font-size:11px;font-weight:400;color:var(--muted);letter-spacing:0.05em;">v1.1.0</span></div>
 
 <div class="tab-bar">
   <button class="tab active" id="tab-scan" onclick="switchTab('scan')">
@@ -224,10 +224,11 @@
 </div>
 
 <script>
-// DrinkPass v1.0.1
+// DrinkPass v1.1.0
 // 更新履歴:
 // v1.0.0 - 初版リリース（ZXingスキャン・OK/NG音・管理画面）
 // v1.0.1 - OK音をチャイム2音、NG音を連続ブザーに変更
+// v1.1.0 - お客様表示画面（display.html）連携追加
 var db = {};
 var scanLog = [];
 var codeReader = null;
@@ -345,20 +346,23 @@ function doScan() {
   if (!id) return;
 
   var el = document.getElementById('scanStatus');
-  var icon, text, sub, cls;
+  var icon, text, sub, cls, note, remaining;
 
   if (!db[id]) {
-    icon = '❓'; text = '未登録のQR'; sub = id; cls = 'ng';
+    icon = '❓'; text = '未登録のQR'; sub = id; cls = 'ng'; note = '未登録';
     addLog(id, 'NG', '未登録');
     playNG();
   } else if (db[id].used) {
-    icon = '✕'; text = '使用済み — NG'; sub = '使用日時: ' + db[id].usedAt; cls = 'ng';
+    icon = '✕'; text = '使用済み — NG'; sub = '使用日時: ' + db[id].usedAt; cls = 'ng'; note = '使用済み';
     addLog(id, 'NG', '使用済み');
     playNG();
   } else {
     db[id].used = true;
     db[id].usedAt = nowStr();
-    icon = '✓'; text = 'OK — ドリンク提供可'; sub = id; cls = 'ok';
+    var total = Object.keys(db).length;
+    var used = Object.values(db).filter(function(v){return v.used;}).length;
+    remaining = total - used;
+    icon = '✓'; text = 'OK — ドリンク提供可'; sub = id; cls = 'ok'; note = '';
     addLog(id, 'OK', '');
     playOK();
   }
@@ -371,7 +375,18 @@ function doScan() {
 
   document.getElementById('qrInput').value = '';
   updateStats();
-  setTimeout(resetStatus, 3000);
+
+  // お客様画面へ結果を送信（localStorage経由）
+  try {
+    var payload = {
+      result: cls === 'ok' ? 'OK' : 'NG',
+      id: id,
+      note: note,
+      remaining: remaining,
+      timestamp: Date.now()
+    };
+    localStorage.setItem('drinkpass_result', JSON.stringify(payload));
+  } catch(e) {}
 }
 
 function resetStatus() {
