@@ -449,15 +449,19 @@
     <div class="status-sub">カメラまたは手動入力で読み取り</div>
   </div>
 
-  <!-- カメラビュー -->
-  <div id="cameraWrap" style="display:none; margin-bottom:16px; position:relative; border-radius:16px; overflow:hidden; background:#000;">
-    <video id="cameraVideo" autoplay playsinline muted style="width:100%; display:block; max-height:260px; object-fit:cover;"></video>
-    <canvas id="cameraCanvas" style="display:none;"></canvas>
-    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;">
-      <div style="width:180px;height:180px;border:2px solid var(--accent);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,0.45);"></div>
+  <!-- カメラ入力（iOS標準カメラ経由） -->
+  <div id="cameraWrap" style="display:none; margin-bottom:16px;">
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:16px;padding:20px;text-align:center;">
+      <div style="font-size:40px;margin-bottom:8px;">📷</div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:4px;">カメラでQRコードを撮影</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">撮影するとQRコードが自動で読み取られます</div>
+      <input type="file" id="cameraFileInput" accept="image/*" capture="environment"
+        style="display:none;" onchange="handleImageFile(event)" />
+      <button class="btn btn-primary" style="width:100%;" onclick="document.getElementById('cameraFileInput').click()">
+        📷 カメラを起動する
+      </button>
+      <button onclick="stopCamera()" style="margin-top:10px;background:none;border:none;color:var(--text-muted);font-size:13px;cursor:pointer;">キャンセル</button>
     </div>
-    <button onclick="stopCamera()" style="position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.6);border:none;color:#fff;border-radius:50%;width:36px;height:36px;font-size:18px;cursor:pointer;">✕</button>
-    <div id="debugOverlay" style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.75);padding:8px 12px;font-size:11px;color:#0f0;font-family:monospace;line-height:1.6;">起動中...</div>
   </div>
 
   <div class="input-group">
@@ -761,66 +765,66 @@ let cameraStream = null;
 let scanInterval = null;
 let barcodeDetector = null;
 
-let debugCount = 0;
-function dbg(msg) {
-  const el = document.getElementById('debugOverlay');
-  if (el) el.innerHTML = msg;
-}
+// ===== CAMERA / FILE INPUT =====
+let cameraStream = null;
+let scanInterval = null;
+let barcodeDetector = null;
 
-async function startCamera() {
-  const wrap = document.getElementById('cameraWrap');
-  const video = document.getElementById('cameraVideo');
-
-  if (!('BarcodeDetector' in window)) {
-    alert('このブラウザはQRスキャンに対応していません。\niOS17以上のSafariをお使いください。');
-    return;
-  }
-
-  try {
-    barcodeDetector = new BarcodeDetector({ formats: ['qr_code'] });
-    dbg('🟢 BarcodeDetector 初期化完了');
-  } catch(e) {
-    alert('BarcodeDetector の初期化に失敗しました。\n' + e.message);
-    return;
-  }
-
-  try {
-    cameraStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment' }
-    });
-    video.srcObject = cameraStream;
-    video.onloadedmetadata = () => {
-      video.play();
-      dbg(`📷 カメラ起動: ${video.videoWidth}x${video.videoHeight}`);
-      scanInterval = setInterval(scanFrame, 300);
-    };
-    wrap.style.display = 'block';
-  } catch (e) {
-    alert('カメラにアクセスできませんでした。\n' + e.message);
-  }
+function startCamera() {
+  document.getElementById('cameraWrap').style.display = 'block';
 }
 
 function stopCamera() {
-  if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
-  clearInterval(scanInterval);
   document.getElementById('cameraWrap').style.display = 'none';
+  document.getElementById('cameraFileInput').value = '';
 }
 
-async function scanFrame() {
-  const video = document.getElementById('cameraVideo');
-  if (!video || video.readyState < 2 || video.videoWidth === 0) return;
+async function handleImageFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
 
-  debugCount++;
+  const statusEl = document.getElementById('scanStatus');
+  statusEl.className = 'scan-status';
+  statusEl.innerHTML = `<div class="status-icon">⏳</div><div class="status-text" style="font-size:18px;color:var(--text-muted);">読み取り中...</div>`;
+
   try {
-    const codes = await barcodeDetector.detect(video);
-    dbg(`🔍 スキャン #${debugCount} → ${codes.length > 0 ? '✅ 検出: ' + codes[0].rawValue : '未検出'}`);
-    if (codes.length > 0) {
-      document.getElementById('qrInput').value = codes[0].rawValue;
-      stopCamera();
-      handleScan();
+    // 画像をBitmapに変換してBarcodeDetectorで読む
+    const bitmap = await createImageBitmap(file);
+
+    if ('BarcodeDetector' in window) {
+      const detector = new BarcodeDetector({ formats: ['qr_code'] });
+      const codes = await detector.detect(bitmap);
+      if (codes.length > 0) {
+        document.getElementById('qrInput').value = codes[0].rawValue;
+        stopCamera();
+        handleScan();
+        return;
+      }
     }
+
+    // フォールバック: Canvasに描画してデータURIで確認
+    const canvas = document.createElement('canvas');
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(bitmap, 0, 0);
+
+    // QRコードが読めなかった場合
+    stopCamera();
+    statusEl.className = 'scan-status ng';
+    statusEl.innerHTML = `<div class="status-icon">❓</div>
+      <div class="status-text" style="color:var(--danger)">QRを認識できません</div>
+      <div class="status-sub">明るい場所でQRコード全体が映るよう撮影してください</div>`;
+    setTimeout(() => {
+      statusEl.className = 'scan-status';
+      statusEl.innerHTML = `<div class="status-icon">📷</div>
+        <div class="status-text" style="font-size:18px;color:var(--text-muted);">QRコードをスキャン</div>
+        <div class="status-sub">カメラまたは手動入力で読み取り</div>`;
+    }, 3000);
+
   } catch(e) {
-    dbg(`❌ エラー: ${e.message}`);
+    stopCamera();
+    alert('読み取りエラー: ' + e.message);
   }
 }
 
