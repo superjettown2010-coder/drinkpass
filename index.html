@@ -3,179 +3,172 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>DrinkPass QR管理システム</title>
+<title>DrinkPass v1.2.0 — スタッフ画面</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, doc, setDoc, getDoc, collection, getDocs, onSnapshot, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  // ===== Firebase設定 =====
+  const firebaseConfig = {
+    apiKey: "AIzaSyC4X70XRiqXeGKRf5J1cVFUHz6qxqTRkwc",
+    authDomain: "drinkpass-ef3df.firebaseapp.com",
+    projectId: "drinkpass-ef3df",
+    storageBucket: "drinkpass-ef3df.firebasestorage.app",
+    messagingSenderId: "1010543853891",
+    appId: "1:1010543853891:web:68dd38400e019175f0aff6"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // グローバルに公開
+  window._fs = { db, doc, setDoc, getDoc, collection, getDocs, onSnapshot, deleteDoc, writeBatch };
+  window._fsReady = true;
+  document.dispatchEvent(new Event('firebase-ready'));
+</script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Noto+Sans+JP:wght@300;400;500;700&display=swap');
-
   :root {
-    --bg: #0a0a0f;
-    --surface: #13131a;
-    --surface2: #1c1c28;
-    --border: #2a2a3d;
-    --accent: #00e5a0;
-    --accent2: #ff6b35;
-    --danger: #ff3b5c;
-    --text: #f0f0f8;
-    --muted: #6b6b8a;
+    --bg:#0a0a0f; --surface:#13131a; --surface2:#1c1c28;
+    --border:#2a2a3d; --accent:#00e5a0; --accent2:#ff6b35;
+    --danger:#ff3b5c; --text:#f0f0f8; --muted:#6b6b8a;
   }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+  .tab-bar{display:flex;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;}
+  .tab{flex:1;padding:14px 8px;text-align:center;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--muted);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;transition:all .2s;}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+  .tab-icon{font-size:18px;display:block;margin-bottom:3px;}
+  .page{display:none;padding:20px 16px;max-width:600px;margin:0 auto;}
+  .page.active{display:block;}
+  .logo{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;padding:18px 16px 0;max-width:600px;margin:0 auto;}
+  .logo span{color:var(--accent);}
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Noto Sans JP', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  /* 接続状態 */
+  .conn-bar{display:flex;align-items:center;gap:8px;padding:8px 16px;max-width:600px;margin:0 auto;font-size:12px;color:var(--muted);}
+  .conn-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;}
+  .conn-dot.ok{background:var(--accent);}
+  .conn-dot.ng{background:var(--danger);}
 
-  .tab-bar { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
-  .tab { flex: 1; padding: 14px 8px; text-align: center; font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; color: var(--muted); cursor: pointer; border: none; background: none; border-bottom: 2px solid transparent; transition: all 0.2s; }
-  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-  .tab-icon { font-size: 18px; display: block; margin-bottom: 3px; }
+  .scan-status{background:var(--surface2);border:1px solid var(--border);border-radius:16px;padding:28px 20px;text-align:center;margin-bottom:20px;min-height:160px;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:all .3s;}
+  .scan-status.ok{border-color:var(--accent);box-shadow:0 0 30px rgba(0,229,160,.3);}
+  .scan-status.ng{border-color:var(--danger);box-shadow:0 0 30px rgba(255,59,92,.3);}
+  .status-icon{font-size:48px;margin-bottom:10px;}
+  .status-text{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;}
+  .status-sub{font-size:12px;color:var(--muted);margin-top:6px;}
 
-  .page { display: none; padding: 20px 16px; max-width: 600px; margin: 0 auto; }
-  .page.active { display: block; }
+  .camera-view{display:none;margin-bottom:16px;border-radius:16px;overflow:hidden;position:relative;background:#000;}
+  .camera-view video{width:100%;display:block;max-height:280px;object-fit:cover;}
+  .scan-frame{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;}
+  .scan-frame-inner{width:200px;height:200px;border:2px solid var(--accent);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,.5);}
+  .scan-hint{position:absolute;bottom:10px;left:0;right:0;text-align:center;font-size:12px;color:rgba(255,255,255,.7);}
+  .close-cam{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.6);border:none;color:#fff;border-radius:50%;width:34px;height:34px;font-size:16px;cursor:pointer;}
 
-  .logo { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; padding: 18px 16px 0; max-width: 600px; margin: 0 auto; }
-  .logo span { color: var(--accent); }
+  .input-group{display:flex;gap:10px;margin-bottom:12px;}
+  .qr-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;color:var(--text);font-size:14px;outline:none;transition:border-color .2s;}
+  .qr-input:focus{border-color:var(--accent);}
+  .qr-input::placeholder{color:var(--muted);}
+  .hint{font-size:12px;color:var(--muted);text-align:center;margin-bottom:20px;}
 
-  .scan-status { background: var(--surface2); border: 1px solid var(--border); border-radius: 16px; padding: 28px 20px; text-align: center; margin-bottom: 20px; min-height: 160px; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.3s; }
-  .scan-status.ok { border-color: var(--accent); box-shadow: 0 0 30px rgba(0,229,160,0.3); }
-  .scan-status.ng { border-color: var(--danger); box-shadow: 0 0 30px rgba(255,59,92,0.3); }
-  .status-icon { font-size: 48px; margin-bottom: 10px; }
-  .status-text { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; }
-  .status-sub { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .btn{padding:14px 18px;border-radius:10px;border:none;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;transition:all .15s;}
+  .btn-primary{background:var(--accent);color:#000;}
+  .btn-primary:active{opacity:.75;}
+  .btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+  .btn-danger{background:var(--danger);color:#fff;}
 
-  /* ライブカメラビュー */
-  .camera-view { display: none; margin-bottom: 16px; border-radius: 16px; overflow: hidden; position: relative; background: #000; }
-  .camera-view video { width: 100%; display: block; max-height: 280px; object-fit: cover; }
-  .scan-frame { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
-  .scan-frame-inner { width: 200px; height: 200px; border: 2px solid var(--accent); border-radius: 12px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.5); }
-  .scan-hint { position: absolute; bottom: 10px; left: 0; right: 0; text-align: center; font-size: 12px; color: rgba(255,255,255,0.7); }
-  .close-cam { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); border: none; color: #fff; border-radius: 50%; width: 34px; height: 34px; font-size: 16px; cursor: pointer; }
+  .stats-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px;}
+  .stat-card{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px 10px;text-align:center;}
+  .stat-value{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;}
+  .stat-label{font-size:11px;color:var(--muted);margin-top:3px;}
 
-  .input-group { display: flex; gap: 10px; margin-bottom: 12px; }
-  .qr-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; color: var(--text); font-size: 14px; outline: none; transition: border-color 0.2s; }
-  .qr-input:focus { border-color: var(--accent); }
-  .qr-input::placeholder { color: var(--muted); }
-  .hint { font-size: 12px; color: var(--muted); text-align: center; margin-bottom: 20px; }
+  .progress-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:20px;}
+  .progress-label{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:8px;}
+  .progress-bar{height:6px;background:var(--border);border-radius:99px;overflow:hidden;}
+  .progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),#00b4d8);border-radius:99px;transition:width .5s ease;}
 
-  .btn { padding: 14px 18px; border-radius: 10px; border: none; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px; cursor: pointer; transition: all 0.15s; }
-  .btn-primary { background: var(--accent); color: #000; }
-  .btn-primary:active { opacity: 0.75; }
-  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
-  .btn-danger { background: var(--danger); color: #fff; }
-  .btn-full { width: 100%; margin-top: 8px; padding: 16px; font-size: 15px; }
+  .section-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--muted);margin-bottom:10px;text-transform:uppercase;}
+  .log-list{display:flex;flex-direction:column;gap:8px;}
+  .log-item{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 14px;display:flex;align-items:center;gap:10px;}
+  .log-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+  .log-dot.ok{background:var(--accent);}
+  .log-dot.ng{background:var(--danger);}
+  .log-id{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;flex:1;}
+  .log-result{font-size:12px;font-weight:700;}
+  .log-result.ok{color:var(--accent);}
+  .log-result.ng{color:var(--danger);}
+  .log-time{font-size:11px;color:var(--muted);}
+  .empty-state{text-align:center;padding:40px 20px;color:var(--muted);}
+  .empty-icon{font-size:36px;margin-bottom:10px;}
 
-  .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-  .stat-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 14px 10px; text-align: center; }
-  .stat-value { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800; }
-  .stat-label { font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .setup-card{background:var(--surface2);border:1px solid var(--border);border-radius:16px;padding:22px;margin-bottom:14px;}
+  .setup-card h3{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:14px;color:var(--accent);}
+  .form-row{margin-bottom:12px;}
+  .form-label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;}
+  .form-input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;color:var(--text);font-size:14px;outline:none;transition:border-color .2s;}
+  .form-input:focus{border-color:var(--accent);}
+  .qr-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px;}
+  .qr-cell{background:white;border-radius:6px;padding:4px;text-align:center;}
+  .qr-cell canvas{width:100%!important;height:auto!important;}
+  .qr-cell-label{font-size:8px;color:#333;margin-top:2px;}
 
-  .progress-wrap { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 20px; }
-  .progress-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 8px; }
-  .progress-bar { height: 6px; background: var(--border); border-radius: 99px; overflow: hidden; }
-  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #00b4d8); border-radius: 99px; transition: width 0.5s ease; }
-
-  .section-title { font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 10px; text-transform: uppercase; }
-  .log-list { display: flex; flex-direction: column; gap: 8px; }
-  .log-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 11px 14px; display: flex; align-items: center; gap: 10px; }
-  .log-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-  .log-dot.ok { background: var(--accent); }
-  .log-dot.ng { background: var(--danger); }
-  .log-id { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; flex: 1; }
-  .log-result { font-size: 12px; font-weight: 700; }
-  .log-result.ok { color: var(--accent); }
-  .log-result.ng { color: var(--danger); }
-  .log-time { font-size: 11px; color: var(--muted); }
-  .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); }
-  .empty-icon { font-size: 36px; margin-bottom: 10px; }
-
-  .setup-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 16px; padding: 22px; margin-bottom: 14px; }
-  .setup-card h3 { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; margin-bottom: 14px; color: var(--accent); }
-  .form-row { margin-bottom: 12px; }
-  .form-label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
-  .form-input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; color: var(--text); font-size: 14px; outline: none; transition: border-color 0.2s; }
-  .form-input:focus { border-color: var(--accent); }
-  .qr-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-top: 14px; }
-  .qr-cell { background: white; border-radius: 6px; padding: 4px; text-align: center; }
-  .qr-cell canvas { width: 100% !important; height: auto !important; }
-  .qr-cell-label { font-size: 8px; color: #333; margin-top: 2px; }
-
-  .search-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; color: var(--text); font-size: 14px; outline: none; margin-bottom: 10px; transition: border-color 0.2s; }
-  .search-input:focus { border-color: var(--accent); }
-  .search-input::placeholder { color: var(--muted); }
-  .table-wrap { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 14px; }
-  table { width: 100%; border-collapse: collapse; }
-  th { background: var(--surface); padding: 11px 14px; text-align: left; font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
-  td { padding: 10px 14px; font-size: 13px; border-top: 1px solid var(--border); }
-  .badge { display: inline-block; padding: 3px 8px; border-radius: 99px; font-size: 11px; font-weight: 700; }
-  .badge-used { background: rgba(0,229,160,0.15); color: var(--accent); }
-  .badge-unused { background: rgba(107,107,138,0.2); color: var(--muted); }
-  .tag { display: inline-block; background: rgba(0,229,160,0.1); color: var(--accent); border: 1px solid rgba(0,229,160,0.3); border-radius: 6px; font-size: 11px; font-family: 'Syne', sans-serif; font-weight: 700; padding: 2px 8px; margin-bottom: 14px; }
-  .divider { height: 1px; background: var(--border); margin: 16px 0; }
+  .search-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;color:var(--text);font-size:14px;outline:none;margin-bottom:10px;transition:border-color .2s;}
+  .search-input:focus{border-color:var(--accent);}
+  .search-input::placeholder{color:var(--muted);}
+  .table-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:14px;}
+  table{width:100%;border-collapse:collapse;}
+  th{background:var(--surface);padding:11px 14px;text-align:left;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;}
+  td{padding:10px 14px;font-size:13px;border-top:1px solid var(--border);}
+  .badge{display:inline-block;padding:3px 8px;border-radius:99px;font-size:11px;font-weight:700;}
+  .badge-used{background:rgba(0,229,160,.15);color:var(--accent);}
+  .badge-unused{background:rgba(107,107,138,.2);color:var(--muted);}
+  .tag{display:inline-block;background:rgba(0,229,160,.1);color:var(--accent);border:1px solid rgba(0,229,160,.3);border-radius:6px;font-size:11px;font-family:'Syne',sans-serif;font-weight:700;padding:2px 8px;margin-bottom:14px;}
+  .divider{height:1px;background:var(--border);margin:16px 0;}
 </style>
 </head>
 <body>
 
-<div class="logo">Drink<span>Pass</span> <span style="font-size:11px;font-weight:400;color:var(--muted);letter-spacing:0.05em;">v1.1.0</span></div>
+<div class="logo">Drink<span>Pass</span> <span style="font-size:11px;font-weight:400;color:var(--muted);">v1.2.0</span></div>
+<div class="conn-bar"><div class="conn-dot" id="connDot"></div><span id="connLabel">Firebase接続中...</span></div>
 
 <div class="tab-bar">
-  <button class="tab active" id="tab-scan" onclick="switchTab('scan')">
-    <span class="tab-icon">📷</span>スキャン
-  </button>
-  <button class="tab" id="tab-setup" onclick="switchTab('setup')">
-    <span class="tab-icon">⚙️</span>発行設定
-  </button>
-  <button class="tab" id="tab-admin" onclick="switchTab('admin')">
-    <span class="tab-icon">📊</span>管理
-  </button>
+  <button class="tab active" id="tab-scan" onclick="switchTab('scan')"><span class="tab-icon">📷</span>スキャン</button>
+  <button class="tab" id="tab-setup" onclick="switchTab('setup')"><span class="tab-icon">⚙️</span>発行設定</button>
+  <button class="tab" id="tab-admin" onclick="switchTab('admin')"><span class="tab-icon">📊</span>管理</button>
 </div>
 
 <!-- SCAN -->
 <div id="page-scan" class="page active">
-
   <div class="scan-status" id="scanStatus">
     <div class="status-icon">📷</div>
     <div class="status-text" style="font-size:18px;color:var(--muted)">QRコードをスキャン</div>
     <div class="status-sub">カメラまたは手動入力</div>
   </div>
-
-  <!-- ライブカメラ -->
   <div class="camera-view" id="cameraView">
     <video id="camVideo" autoplay playsinline muted></video>
     <div class="scan-frame"><div class="scan-frame-inner"></div></div>
     <div class="scan-hint">QRコードを枠内に合わせてください</div>
     <button class="close-cam" onclick="stopCamera()">✕</button>
   </div>
-
   <div class="input-group">
     <input class="qr-input" id="qrInput" placeholder="QR IDを入力（例: EVT-0001）" autocomplete="off">
     <button class="btn btn-secondary" id="camBtn" onclick="toggleCamera()">📷</button>
     <button class="btn btn-primary" onclick="doScan()">判定</button>
   </div>
   <p class="hint">📷ボタンでカメラ起動 → QRを枠内に合わせると自動判定</p>
-
   <div class="stats-grid">
-    <div class="stat-card">
-      <div class="stat-value" id="cntUsed" style="color:var(--accent)">0</div>
-      <div class="stat-label">使用済み</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value" id="cntUnused" style="color:var(--muted)">0</div>
-      <div class="stat-label">未使用</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value" id="cntTotal" style="color:var(--accent2)">0</div>
-      <div class="stat-label">総発行数</div>
-    </div>
+    <div class="stat-card"><div class="stat-value" id="cntUsed" style="color:var(--accent)">0</div><div class="stat-label">使用済み</div></div>
+    <div class="stat-card"><div class="stat-value" id="cntUnused" style="color:var(--muted)">0</div><div class="stat-label">未使用</div></div>
+    <div class="stat-card"><div class="stat-value" id="cntTotal" style="color:var(--accent2)">0</div><div class="stat-label">総発行数</div></div>
   </div>
-
   <div class="progress-wrap">
     <div class="progress-label"><span>使用率</span><span id="pctLabel">0%</span></div>
     <div class="progress-bar"><div class="progress-fill" id="pctBar" style="width:0%"></div></div>
   </div>
-
   <div class="section-title">直近のスキャン履歴</div>
-  <div class="log-list" id="logList">
-    <div class="empty-state"><div class="empty-icon">🔍</div>まだスキャンがありません</div>
-  </div>
+  <div class="log-list" id="logList"><div class="empty-state"><div class="empty-icon">🔍</div>まだスキャンがありません</div></div>
 </div>
 
 <!-- SETUP -->
@@ -183,18 +176,9 @@
   <div class="tag">STEP 1 — イベント設定</div>
   <div class="setup-card">
     <h3>🎪 イベント情報</h3>
-    <div class="form-row">
-      <label class="form-label">イベント名</label>
-      <input class="form-input" id="eventName" placeholder="例: Summer Party 2025">
-    </div>
-    <div class="form-row">
-      <label class="form-label">発行枚数</label>
-      <input class="form-input" type="number" id="issueCount" placeholder="例: 1000" min="1" max="5000">
-    </div>
-    <div class="form-row">
-      <label class="form-label">IDプレフィックス</label>
-      <input class="form-input" id="idPrefix" placeholder="例: EVT" maxlength="6">
-    </div>
+    <div class="form-row"><label class="form-label">イベント名</label><input class="form-input" id="eventName" placeholder="例: Summer Party 2025"></div>
+    <div class="form-row"><label class="form-label">発行枚数</label><input class="form-input" type="number" id="issueCount" placeholder="例: 1000" min="1" max="5000"></div>
+    <div class="form-row"><label class="form-label">IDプレフィックス</label><input class="form-input" id="idPrefix" placeholder="例: EVT" maxlength="6"></div>
     <button class="btn btn-primary" style="width:100%;margin-top:6px;" onclick="generateQRs()">✦ QRコードを発行する</button>
   </div>
   <div class="setup-card" id="previewCard" style="display:none;">
@@ -213,180 +197,183 @@
   <div class="table-wrap">
     <table>
       <thead><tr><th>QR ID</th><th>ステータス</th><th>使用日時</th></tr></thead>
-      <tbody id="adminBody">
-        <tr><td colspan="3"><div class="empty-state"><div class="empty-icon">📋</div>発行設定でQRを発行してください</div></td></tr>
-      </tbody>
+      <tbody id="adminBody"><tr><td colspan="3"><div class="empty-state"><div class="empty-icon">📋</div>発行設定でQRを発行してください</div></td></tr></tbody>
     </table>
   </div>
-  <div style="text-align:center;">
-    <button class="btn btn-danger" onclick="resetAll()">🗑 全データリセット</button>
-  </div>
+  <div style="text-align:center;"><button class="btn btn-danger" onclick="resetAll()">🗑 全データリセット</button></div>
 </div>
 
 <script>
-// DrinkPass v1.1.0
-// 更新履歴:
-// v1.0.0 - 初版リリース（ZXingスキャン・OK/NG音・管理画面）
-// v1.0.1 - OK音をチャイム2音、NG音を連続ブザーに変更
+// DrinkPass v1.2.0
+// v1.0.0 - 初版リリース
+// v1.0.1 - OK音チャイム2音・NG音連続ブザーに変更
 // v1.1.0 - お客様表示画面（display.html）連携追加
-var db = {};
+// v1.2.0 - Firebase Firestore リアルタイム同期対応
+
+var localDb = {};
 var scanLog = [];
 var codeReader = null;
 var cameraActive = false;
+var fsReady = false;
 
-// TABS
+// Firebase準備完了待ち
+document.addEventListener('firebase-ready', function() {
+  fsReady = true;
+  document.getElementById('connDot').className = 'conn-dot ok';
+  document.getElementById('connLabel').textContent = 'Firebase接続済み';
+  loadFromFirestore();
+});
+
+// ===== Firestore操作 =====
+async function loadFromFirestore() {
+  try {
+    var fs = window._fs;
+    var snap = await fs.getDocs(fs.collection(fs.db, 'qrcodes'));
+    localDb = {};
+    snap.forEach(function(d) { localDb[d.id] = d.data(); });
+    updateStats();
+    renderTable();
+  } catch(e) {
+    console.error('load error', e);
+  }
+}
+
+async function saveToFirestore(id, data) {
+  try {
+    var fs = window._fs;
+    await fs.setDoc(fs.doc(fs.db, 'qrcodes', id), data);
+  } catch(e) {
+    console.error('save error', e);
+  }
+}
+
+async function broadcastResult(payload) {
+  try {
+    var fs = window._fs;
+    await fs.setDoc(fs.doc(fs.db, 'display', 'latest'), payload);
+  } catch(e) {
+    console.error('broadcast error', e);
+  }
+}
+
+// ===== TABS =====
 function switchTab(name) {
   ['scan','setup','admin'].forEach(function(n) {
-    document.getElementById('page-' + n).classList.remove('active');
-    document.getElementById('tab-' + n).classList.remove('active');
+    document.getElementById('page-'+n).classList.remove('active');
+    document.getElementById('tab-'+n).classList.remove('active');
   });
-  document.getElementById('page-' + name).classList.add('active');
-  document.getElementById('tab-' + name).classList.add('active');
+  document.getElementById('page-'+name).classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
   if (name !== 'scan') stopCamera();
   if (name === 'admin') renderTable();
 }
 
-// CAMERA (ZXing)
+// ===== CAMERA =====
 function toggleCamera() {
-  if (cameraActive) {
-    stopCamera();
-  } else {
-    startCamera();
-  }
+  if (cameraActive) stopCamera(); else startCamera();
 }
 
 function startCamera() {
-  var view = document.getElementById('cameraView');
-  var video = document.getElementById('camVideo');
-  var btn = document.getElementById('camBtn');
-
-  if (typeof ZXing === 'undefined') {
-    alert('スキャンライブラリの読み込みに失敗しました。\nページを再読み込みしてお試しください。');
-    return;
-  }
-
+  if (typeof ZXing === 'undefined') { alert('スキャンライブラリの読み込みに失敗しました。ページを再読み込みしてください。'); return; }
   codeReader = new ZXing.BrowserQRCodeReader();
   codeReader.decodeFromVideoDevice(null, 'camVideo', function(result, err) {
-    if (result) {
-      document.getElementById('qrInput').value = result.getText();
-      stopCamera();
-      doScan();
-    }
+    if (result) { document.getElementById('qrInput').value = result.getText(); stopCamera(); doScan(); }
   });
-
-  view.style.display = 'block';
-  btn.textContent = '⏹';
-  btn.style.background = 'var(--danger)';
-  btn.style.color = '#fff';
+  document.getElementById('cameraView').style.display = 'block';
+  document.getElementById('camBtn').textContent = '⏹';
+  document.getElementById('camBtn').style.background = 'var(--danger)';
+  document.getElementById('camBtn').style.color = '#fff';
   cameraActive = true;
 }
 
 function stopCamera() {
-  var view = document.getElementById('cameraView');
-  var btn = document.getElementById('camBtn');
-  if (codeReader) {
-    try { codeReader.reset(); } catch(e) {}
-    codeReader = null;
-  }
-  view.style.display = 'none';
-  btn.textContent = '📷';
-  btn.style.background = '';
-  btn.style.color = '';
+  if (codeReader) { try { codeReader.reset(); } catch(e) {} codeReader = null; }
+  document.getElementById('cameraView').style.display = 'none';
+  document.getElementById('camBtn').textContent = '📷';
+  document.getElementById('camBtn').style.background = '';
+  document.getElementById('camBtn').style.color = '';
   cameraActive = false;
 }
 
-// SOUND
+// ===== SOUND =====
 var audioCtx = null;
 function getAudioCtx() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   return audioCtx;
 }
-
 function playOK() {
   try {
-    var ctx = getAudioCtx();
-    // チャイム2音「ポーン♪」
+    var c = getAudioCtx();
     [0, 0.2].forEach(function(d, i) {
-      var osc = ctx.createOscillator(), gain = ctx.createGain();
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.type = 'sine';
-      osc.frequency.value = i === 0 ? 880 : 1320;
-      gain.gain.setValueAtTime(0.9, ctx.currentTime + d);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + d + 0.4);
-      osc.start(ctx.currentTime + d);
-      osc.stop(ctx.currentTime + d + 0.4);
+      var o = c.createOscillator(), g = c.createGain();
+      o.connect(g); g.connect(c.destination);
+      o.type = 'sine'; o.frequency.value = i===0 ? 880 : 1320;
+      g.gain.setValueAtTime(0.9, c.currentTime+d);
+      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime+d+0.4);
+      o.start(c.currentTime+d); o.stop(c.currentTime+d+0.4);
     });
   } catch(e) {}
 }
-
 function playNG() {
   try {
-    var ctx = getAudioCtx();
-    // 連続ブザー「ブブブッ」3連短音
+    var c = getAudioCtx();
     [0, 0.2, 0.4].forEach(function(d) {
-      var osc = ctx.createOscillator(), gain = ctx.createGain();
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.type = 'square';
-      osc.frequency.value = 200;
-      gain.gain.setValueAtTime(0.9, ctx.currentTime + d);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + d + 0.15);
-      osc.start(ctx.currentTime + d);
-      osc.stop(ctx.currentTime + d + 0.15);
+      var o = c.createOscillator(), g = c.createGain();
+      o.connect(g); g.connect(c.destination);
+      o.type = 'square'; o.frequency.value = 200;
+      g.gain.setValueAtTime(0.9, c.currentTime+d);
+      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime+d+0.15);
+      o.start(c.currentTime+d); o.stop(c.currentTime+d+0.15);
     });
   } catch(e) {}
 }
 
-// SCAN
+// ===== SCAN =====
 document.getElementById('qrInput').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') doScan();
 });
 
-function doScan() {
+async function doScan() {
   var id = document.getElementById('qrInput').value.trim().toUpperCase();
   if (!id) return;
 
   var el = document.getElementById('scanStatus');
   var icon, text, sub, cls, note, remaining;
 
-  if (!db[id]) {
-    icon = '❓'; text = '未登録のQR'; sub = id; cls = 'ng'; note = '未登録';
-    addLog(id, 'NG', '未登録');
-    playNG();
-  } else if (db[id].used) {
-    icon = '✕'; text = '使用済み — NG'; sub = '使用日時: ' + db[id].usedAt; cls = 'ng'; note = '使用済み';
-    addLog(id, 'NG', '使用済み');
-    playNG();
+  if (!localDb[id]) {
+    icon='❓'; text='未登録のQR'; sub=id; cls='ng'; note='未登録';
+    addLog(id,'NG','未登録'); playNG();
+  } else if (localDb[id].used) {
+    icon='✕'; text='使用済み — NG'; sub='使用日時: '+localDb[id].usedAt; cls='ng'; note='使用済み';
+    addLog(id,'NG','使用済み'); playNG();
   } else {
-    db[id].used = true;
-    db[id].usedAt = nowStr();
-    var total = Object.keys(db).length;
-    var used = Object.values(db).filter(function(v){return v.used;}).length;
+    localDb[id].used = true;
+    localDb[id].usedAt = nowStr();
+    var total = Object.keys(localDb).length;
+    var used = Object.values(localDb).filter(function(v){return v.used;}).length;
     remaining = total - used;
-    icon = '✓'; text = 'OK — ドリンク提供可'; sub = id; cls = 'ok'; note = '';
-    addLog(id, 'OK', '');
-    playOK();
+    icon='✓'; text='OK — ドリンク提供可'; sub=id; cls='ok'; note='';
+    addLog(id,'OK',''); playOK();
+    // Firestoreに保存
+    await saveToFirestore(id, localDb[id]);
   }
 
-  el.className = 'scan-status ' + cls;
+  el.className = 'scan-status '+cls;
   el.innerHTML =
-    '<div class="status-icon">' + icon + '</div>' +
-    '<div class="status-text" style="color:' + (cls==='ok'?'var(--accent)':'var(--danger)') + '">' + text + '</div>' +
-    '<div class="status-sub">' + sub + '</div>';
+    '<div class="status-icon">'+icon+'</div>'+
+    '<div class="status-text" style="color:'+(cls==='ok'?'var(--accent)':'var(--danger)')+'">'+text+'</div>'+
+    '<div class="status-sub">'+sub+'</div>';
 
   document.getElementById('qrInput').value = '';
   updateStats();
 
-  // お客様画面へ結果を送信（localStorage経由）
-  try {
-    var payload = {
-      result: cls === 'ok' ? 'OK' : 'NG',
-      id: id,
-      note: note,
-      remaining: remaining,
-      timestamp: Date.now()
-    };
-    localStorage.setItem('drinkpass_result', JSON.stringify(payload));
-  } catch(e) {}
+  // お客様画面へFirestore経由で送信
+  await broadcastResult({
+    result: cls==='ok' ? 'OK' : 'NG',
+    id: id, note: note,
+    remaining: remaining !== undefined ? remaining : null,
+    timestamp: Date.now()
+  });
 }
 
 function resetStatus() {
@@ -405,106 +392,109 @@ function addLog(id, result, note) {
 
 function renderLog() {
   var el = document.getElementById('logList');
-  if (!scanLog.length) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div>まだスキャンがありません</div>';
-    return;
-  }
+  if (!scanLog.length) { el.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div>まだスキャンがありません</div>'; return; }
   el.innerHTML = scanLog.slice(0,10).map(function(l) {
-    return '<div class="log-item">' +
-      '<div class="log-dot ' + l.result.toLowerCase() + '"></div>' +
-      '<div class="log-id">' + l.id + '</div>' +
-      '<div class="log-result ' + l.result.toLowerCase() + '">' + l.result + (l.note?' · '+l.note:'') + '</div>' +
-      '<div class="log-time">' + l.time + '</div>' +
-      '</div>';
+    return '<div class="log-item"><div class="log-dot '+l.result.toLowerCase()+'"></div><div class="log-id">'+l.id+'</div><div class="log-result '+l.result.toLowerCase()+'">'+l.result+(l.note?' · '+l.note:'')+'</div><div class="log-time">'+l.time+'</div></div>';
   }).join('');
 }
 
 function updateStats() {
-  var total = Object.keys(db).length;
-  var used = Object.values(db).filter(function(v){return v.used;}).length;
+  var total = Object.keys(localDb).length;
+  var used = Object.values(localDb).filter(function(v){return v.used;}).length;
   document.getElementById('cntUsed').textContent = used;
-  document.getElementById('cntUnused').textContent = total - used;
+  document.getElementById('cntUnused').textContent = total-used;
   document.getElementById('cntTotal').textContent = total;
   var pct = total ? Math.round(used/total*100) : 0;
-  document.getElementById('pctLabel').textContent = pct + '%';
-  document.getElementById('pctBar').style.width = pct + '%';
+  document.getElementById('pctLabel').textContent = pct+'%';
+  document.getElementById('pctBar').style.width = pct+'%';
 }
 
-// SETUP
-function generateQRs() {
+// ===== SETUP =====
+async function generateQRs() {
   var name = document.getElementById('eventName').value.trim();
   var count = parseInt(document.getElementById('issueCount').value);
   var prefix = document.getElementById('idPrefix').value.trim().toUpperCase() || 'EVT';
-
   if (!name) { alert('イベント名を入力してください'); return; }
-  if (!count || count < 1) { alert('発行枚数を入力してください'); return; }
-  if (count > 5000) { alert('5000枚以内で入力してください'); return; }
+  if (!count || count<1) { alert('発行枚数を入力してください'); return; }
+  if (count>5000) { alert('5000枚以内で入力してください'); return; }
+  if (!confirm(count+'枚のQRを発行してFirebaseに保存します。よろしいですか？')) return;
 
-  db = {};
-  for (var i = 1; i <= count; i++) {
-    var id = prefix + '-' + String(i).padStart(4,'0');
-    db[id] = { used: false, usedAt: null };
+  localDb = {};
+  var fs = window._fs;
+  var batch = fs.writeBatch(fs.db);
+  var batchCount = 0;
+
+  for (var i=1; i<=count; i++) {
+    var id = prefix+'-'+String(i).padStart(4,'0');
+    var data = {used:false, usedAt:null, event:name};
+    localDb[id] = data;
+    batch.set(fs.doc(fs.db,'qrcodes',id), data);
+    batchCount++;
+    // Firestoreのbatchは500件まで
+    if (batchCount === 499) {
+      await batch.commit();
+      batch = fs.writeBatch(fs.db);
+      batchCount = 0;
+    }
   }
+  if (batchCount > 0) await batch.commit();
 
   var grid = document.getElementById('qrGrid');
   grid.innerHTML = '';
-  Object.keys(db).slice(0,8).forEach(function(id) {
-    var cell = document.createElement('div');
-    cell.className = 'qr-cell';
+  Object.keys(localDb).slice(0,8).forEach(function(id) {
+    var cell = document.createElement('div'); cell.className='qr-cell';
     var qrDiv = document.createElement('div');
-    var lbl = document.createElement('div');
-    lbl.className = 'qr-cell-label';
-    lbl.textContent = id;
-    cell.appendChild(qrDiv);
-    cell.appendChild(lbl);
-    grid.appendChild(cell);
-    new QRCode(qrDiv, {text:id, width:72, height:72, colorDark:'#000', colorLight:'#fff'});
+    var lbl = document.createElement('div'); lbl.className='qr-cell-label'; lbl.textContent=id;
+    cell.appendChild(qrDiv); cell.appendChild(lbl); grid.appendChild(cell);
+    new QRCode(qrDiv,{text:id,width:72,height:72,colorDark:'#000',colorLight:'#fff'});
   });
 
-  document.getElementById('previewCard').style.display = 'block';
+  document.getElementById('previewCard').style.display='block';
   updateStats();
-  alert('✅ ' + count + '枚のQRコードを発行しました！');
+  alert('✅ '+count+'枚のQRコードを発行しFirebaseに保存しました！');
 }
 
 function exportCSV() {
-  var rows = [['QR_ID','使用済み','使用日時']];
-  Object.keys(db).forEach(function(id) {
-    var v = db[id];
-    rows.push([id, v.used?'済':'未', v.usedAt||'']);
+  var rows=[['QR_ID','使用済み','使用日時','イベント']];
+  Object.keys(localDb).forEach(function(id) {
+    var v=localDb[id];
+    rows.push([id,v.used?'済':'未',v.usedAt||'',v.event||'']);
   });
-  var csv = rows.map(function(r){return r.join(',');}).join('\n');
-  var blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'drinkpass_' + Date.now() + '.csv';
-  a.click();
+  var csv=rows.map(function(r){return r.join(',');}).join('\n');
+  var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  var a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='drinkpass_'+Date.now()+'.csv'; a.click();
 }
 
-// ADMIN
+// ===== ADMIN =====
 function renderTable() {
   var q = document.getElementById('searchInput').value.trim().toUpperCase();
-  var keys = Object.keys(db).filter(function(id){return !q||id.includes(q);});
+  var keys = Object.keys(localDb).filter(function(id){return !q||id.includes(q);});
   var body = document.getElementById('adminBody');
   if (!keys.length) {
-    body.innerHTML = '<tr><td colspan="3"><div class="empty-state"><div class="empty-icon">📋</div>' +
-      (Object.keys(db).length===0?'発行設定でQRを発行してください':'該当なし') + '</div></td></tr>';
+    body.innerHTML='<tr><td colspan="3"><div class="empty-state"><div class="empty-icon">📋</div>'+(Object.keys(localDb).length===0?'発行設定でQRを発行してください':'該当なし')+'</div></td></tr>';
     return;
   }
-  body.innerHTML = keys.slice(0,200).map(function(id) {
-    var v = db[id];
-    return '<tr>' +
-      '<td style="font-family:Syne,sans-serif;font-weight:700">' + id + '</td>' +
-      '<td><span class="badge ' + (v.used?'badge-used':'badge-unused') + '">' + (v.used?'使用済':'未使用') + '</span></td>' +
-      '<td style="font-size:12px;color:var(--muted)">' + (v.usedAt||'—') + '</td>' +
-      '</tr>';
+  body.innerHTML=keys.slice(0,200).map(function(id) {
+    var v=localDb[id];
+    return '<tr><td style="font-family:Syne,sans-serif;font-weight:700">'+id+'</td><td><span class="badge '+(v.used?'badge-used':'badge-unused')+'">'+(v.used?'使用済':'未使用')+'</span></td><td style="font-size:12px;color:var(--muted)">'+(v.usedAt||'—')+'</td></tr>';
   }).join('');
 }
 
-function resetAll() {
-  if (!confirm('全データをリセットしますか？')) return;
-  db = {}; scanLog = [];
+async function resetAll() {
+  if (!confirm('全データをFirebaseからリセットしますか？この操作は取り消せません。')) return;
+  var fs = window._fs;
+  var snap = await fs.getDocs(fs.collection(fs.db,'qrcodes'));
+  var batch = fs.writeBatch(fs.db);
+  var cnt = 0;
+  snap.forEach(function(d) {
+    batch.delete(d.ref); cnt++;
+    if (cnt===499) { batch.commit(); batch=fs.writeBatch(fs.db); cnt=0; }
+  });
+  if (cnt>0) await batch.commit();
+  localDb={}; scanLog=[];
   renderLog(); updateStats(); renderTable();
-  document.getElementById('previewCard').style.display = 'none';
+  document.getElementById('previewCard').style.display='none';
   alert('リセットしました');
 }
 

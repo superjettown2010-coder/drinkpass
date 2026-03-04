@@ -4,190 +4,98 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DrinkPass — お客様画面</title>
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyC4X70XRiqXeGKRf5J1cVFUHz6qxqTRkwc",
+    authDomain: "drinkpass-ef3df.firebaseapp.com",
+    projectId: "drinkpass-ef3df",
+    storageBucket: "drinkpass-ef3df.firebasestorage.app",
+    messagingSenderId: "1010543853891",
+    appId: "1:1010543853891:web:68dd38400e019175f0aff6"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // display/latest ドキュメントをリアルタイム監視
+  var lastTimestamp = null;
+  onSnapshot(doc(db, 'display', 'latest'), function(snap) {
+    if (!snap.exists()) return;
+    var data = snap.data();
+    if (!data || data.timestamp === lastTimestamp) return;
+    lastTimestamp = data.timestamp;
+    window.showResult(data);
+  });
+
+  document.dispatchEvent(new Event('firebase-ready'));
+</script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Noto+Sans+JP:wght@400;700&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Noto Sans JP',sans-serif;background:#0a0a0f;color:#f0f0f8;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;transition:background .5s ease;}
+  body.ok{background:#021a0f;}
+  body.ng{background:#1a0206;}
 
-  * { margin:0; padding:0; box-sizing:border-box; }
+  .bg-pulse{position:fixed;inset:0;opacity:0;pointer-events:none;}
+  .bg-pulse.active-ok{animation:bgOK .6s ease-out forwards;}
+  .bg-pulse.active-ng{animation:bgNG .6s ease-out forwards;}
+  @keyframes bgOK{0%{opacity:1;background:radial-gradient(circle,rgba(0,229,160,.3) 0%,transparent 70%);transform:scale(0)}100%{opacity:0;transform:scale(3)}}
+  @keyframes bgNG{0%{opacity:1;background:radial-gradient(circle,rgba(255,59,92,.3) 0%,transparent 70%);transform:scale(0)}100%{opacity:0;transform:scale(3)}}
 
-  body {
-    font-family: 'Noto Sans JP', sans-serif;
-    background: #0a0a0f;
-    color: #f0f0f8;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    transition: background 0.5s ease;
-  }
+  .display-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:40px 24px;text-align:center;width:100%;}
 
-  body.ok { background: #021a0f; }
-  body.ng { background: #1a0206; }
+  .mark{line-height:1;opacity:0;transform:scale(0.3);}
+  .mark.show-ok{animation:popOK .4s cubic-bezier(.175,.885,.32,1.275) forwards;}
+  .mark.show-ng{animation:popNG .5s cubic-bezier(.175,.885,.32,1.275) forwards;}
+  @keyframes popOK{0%{opacity:0;transform:scale(.3) rotate(-10deg)}60%{opacity:1;transform:scale(1.15) rotate(3deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
+  @keyframes popNG{0%{opacity:0;transform:scale(.3) rotate(-15deg)}50%{opacity:1;transform:scale(1.2) rotate(5deg)}70%{transform:scale(.95) rotate(-2deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
+  .mark.ok{font-size:clamp(120px,30vw,240px);color:#00e5a0;filter:drop-shadow(0 0 40px #00e5a0);}
+  .mark.ng{width:clamp(160px,38vw,300px);height:auto;}
 
-  /* 背景パルス */
-  .bg-pulse {
-    position: fixed;
-    inset: 0;
-    opacity: 0;
-    transition: opacity 0.3s;
-    pointer-events: none;
-    border-radius: 50%;
-    transform: scale(0);
-  }
-  .bg-pulse.active {
-    animation: bgPulse 0.6s ease-out forwards;
-  }
-  .bg-pulse.ok { background: radial-gradient(circle, rgba(0,229,160,0.25) 0%, transparent 70%); }
-  .bg-pulse.ng { background: radial-gradient(circle, rgba(255,59,92,0.25) 0%, transparent 70%); }
-  @keyframes bgPulse {
-    0%   { opacity:1; transform:scale(0); }
-    100% { opacity:0; transform:scale(3); }
-  }
+  .message{font-family:'Syne',sans-serif;font-size:clamp(24px,6vw,56px);font-weight:800;letter-spacing:-.02em;opacity:0;transform:translateY(20px);}
+  .message.show{animation:slideUp .4s ease .15s forwards;}
+  .message.ok{color:#00e5a0;}
+  .message.ng{color:#ff3b5c;}
 
-  /* メイン表示エリア */
-  .display-wrap {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 28px;
-    padding: 40px 24px;
-    text-align: center;
-    width: 100%;
-  }
+  .submsg{font-size:clamp(14px,3.5vw,24px);color:rgba(240,240,248,.6);opacity:0;transform:translateY(10px);}
+  .submsg.show{animation:slideUp .4s ease .25s forwards;}
 
-  /* 判定マーク */
-  .mark {
-    font-size: clamp(120px, 30vw, 240px);
-    line-height: 1;
-    opacity: 0;
-    transform: scale(0.3);
-    transition: none;
-    filter: drop-shadow(0 0 40px currentColor);
-  }
-  .mark.show {
-    animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-  }
-  @keyframes popIn {
-    0%   { opacity:0; transform:scale(0.3) rotate(-10deg); }
-    60%  { opacity:1; transform:scale(1.15) rotate(3deg); }
-    100% { opacity:1; transform:scale(1) rotate(0deg); }
-  }
-  .mark.ok { color: #00e5a0; }
-  .mark.ng { color: #ff3b5c; }
+  .remaining{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:14px 32px;opacity:0;transform:translateY(10px);}
+  .remaining.show{animation:slideUp .4s ease .35s forwards;}
+  .remaining-label{font-size:13px;color:rgba(240,240,248,.5);margin-bottom:4px;}
+  .remaining-value{font-family:'Syne',sans-serif;font-size:clamp(32px,8vw,60px);font-weight:800;}
+  .remaining-unit{font-size:16px;color:rgba(240,240,248,.6);margin-left:4px;}
 
-  /* メッセージ */
-  .message {
-    font-family: 'Syne', sans-serif;
-    font-size: clamp(28px, 7vw, 64px);
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    opacity: 0;
-    transform: translateY(20px);
-    transition: none;
-  }
-  .message.show {
-    animation: slideUp 0.4s ease 0.15s forwards;
-  }
-  @keyframes slideUp {
-    to { opacity:1; transform:translateY(0); }
-  }
-  .message.ok { color: #00e5a0; }
-  .message.ng { color: #ff3b5c; }
+  @keyframes slideUp{to{opacity:1;transform:translateY(0)}}
 
-  /* サブメッセージ */
-  .submsg {
-    font-size: clamp(16px, 4vw, 28px);
-    color: rgba(240,240,248,0.7);
-    opacity: 0;
-    transform: translateY(10px);
-    transition: none;
-  }
-  .submsg.show {
-    animation: slideUp 0.4s ease 0.25s forwards;
-  }
+  .standby{display:flex;flex-direction:column;align-items:center;gap:20px;}
+  .standby-logo{font-family:'Syne',sans-serif;font-size:clamp(36px,10vw,80px);font-weight:800;letter-spacing:-.03em;}
+  .standby-logo span{color:#00e5a0;}
+  .standby-sub{font-size:clamp(13px,2.5vw,18px);color:rgba(240,240,248,.4);letter-spacing:.05em;}
+  .standby-pulse{width:12px;height:12px;background:#00e5a0;border-radius:50%;animation:pulse 2s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:.3;transform:scale(1)}50%{opacity:1;transform:scale(1.4)}}
 
-  /* 残り枚数 */
-  .remaining {
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 16px;
-    padding: 14px 32px;
-    opacity: 0;
-    transform: translateY(10px);
-    transition: none;
-  }
-  .remaining.show {
-    animation: slideUp 0.4s ease 0.35s forwards;
-  }
-  .remaining-label {
-    font-size: 13px;
-    color: rgba(240,240,248,0.5);
-    margin-bottom: 4px;
-  }
-  .remaining-value {
-    font-family: 'Syne', sans-serif;
-    font-size: clamp(32px, 8vw, 60px);
-    font-weight: 800;
-    color: #f0f0f8;
-  }
-  .remaining-unit {
-    font-size: 16px;
-    color: rgba(240,240,248,0.6);
-    margin-left: 4px;
-  }
+  .result{display:none;width:100%;}
+  .result.active{display:flex;}
 
-  /* 待機画面 */
-  .standby {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 20px;
-  }
-  .standby-logo {
-    font-family: 'Syne', sans-serif;
-    font-size: clamp(36px, 10vw, 80px);
-    font-weight: 800;
-    letter-spacing: -0.03em;
-  }
-  .standby-logo span { color: #00e5a0; }
-  .standby-sub {
-    font-size: clamp(14px, 3vw, 20px);
-    color: rgba(240,240,248,0.4);
-    letter-spacing: 0.05em;
-  }
-  .standby-pulse {
-    width: 12px; height: 12px;
-    background: #00e5a0;
-    border-radius: 50%;
-    animation: pulse 2s ease-in-out infinite;
-  }
-  @keyframes pulse {
-    0%,100% { opacity:0.3; transform:scale(1); }
-    50%      { opacity:1;   transform:scale(1.4); }
-  }
+  .corner-logo{position:fixed;bottom:20px;right:24px;font-family:'Syne',sans-serif;font-size:14px;font-weight:800;color:rgba(240,240,248,.2);}
+  .corner-logo span{color:rgba(0,229,160,.4);}
 
-  /* 結果画面 */
-  .result { display: none; width: 100%; }
-  .result.active { display: flex; }
-
-  /* ロゴ（常時表示） */
-  .corner-logo {
-    position: fixed;
-    bottom: 20px;
-    right: 24px;
-    font-family: 'Syne', sans-serif;
-    font-size: 14px;
-    font-weight: 800;
-    color: rgba(240,240,248,0.2);
-  }
-  .corner-logo span { color: rgba(0,229,160,0.4); }
+  /* 接続状態 */
+  .conn-status{position:fixed;top:12px;right:16px;display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(240,240,248,.3);}
+  .conn-dot{width:6px;height:6px;border-radius:50%;background:rgba(240,240,248,.3);}
+  .conn-dot.ok{background:#00e5a0;}
 </style>
 </head>
 <body>
 
 <div class="bg-pulse" id="bgPulse"></div>
+
+<div class="conn-status"><div class="conn-dot" id="connDot"></div><span id="connLabel">接続中...</span></div>
 
 <!-- 待機画面 -->
 <div class="standby" id="standby">
@@ -210,27 +118,12 @@
 <div class="corner-logo">Drink<span>Pass</span></div>
 
 <script>
-// ===== メッセージ設定 =====
-var MESSAGES = {
-  ok:        'ご利用ありがとうございます',
-  ng_used:   'すでに使用済みです',
-  ng_invalid:'このQRは無効です'
-};
+document.addEventListener('firebase-ready', function() {
+  document.getElementById('connDot').className = 'conn-dot ok';
+  document.getElementById('connLabel').textContent = 'Firebase接続済み';
+});
 
-// ===== 状態管理 =====
-var currentState = 'standby';
-var lastTimestamp = null;
-
-// ===== 画面切り替え =====
-function showStandby() {
-  currentState = 'standby';
-  document.body.className = '';
-  document.getElementById('standby').style.display = 'flex';
-  document.getElementById('result').classList.remove('active');
-}
-
-function showResult(data) {
-  currentState = 'result';
+window.showResult = function(data) {
   var isOK = data.result === 'OK';
   var cls = isOK ? 'ok' : 'ng';
 
@@ -239,27 +132,30 @@ function showResult(data) {
 
   // 背景パルス
   var pulse = document.getElementById('bgPulse');
-  pulse.className = 'bg-pulse ' + cls;
-  void pulse.offsetWidth; // reflow
-  pulse.classList.add('active');
+  pulse.className = 'bg-pulse';
+  void pulse.offsetWidth;
+  pulse.className = 'bg-pulse active-' + cls;
 
   // マーク
   var mark = document.getElementById('mark');
   mark.className = 'mark ' + cls;
-  mark.textContent = isOK ? '◎' : '✕';
+  if (isOK) {
+    mark.textContent = '◎';
+  } else {
+    mark.innerHTML =
+      '<svg viewBox="0 0 200 180" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;">' +
+      '<ellipse cx="100" cy="82" rx="95" ry="72" fill="white" stroke="#222" stroke-width="7"/>' +
+      '<path d="M70 148 Q60 175 40 178 Q65 165 75 150 Z" fill="white" stroke="#222" stroke-width="5" stroke-linejoin="round"/>' +
+      '<text x="100" y="100" text-anchor="middle" font-family="Syne,Arial Black,sans-serif" font-weight="900" font-size="38" fill="#222" letter-spacing="-1">Sorry!</text>' +
+      '</svg>';
+  }
   void mark.offsetWidth;
-  mark.classList.add('show');
+  mark.className = 'mark ' + cls + ' show-' + cls;
 
   // メッセージ
   var msg = document.getElementById('message');
   msg.className = 'message ' + cls;
-  if (isOK) {
-    msg.textContent = MESSAGES.ok;
-  } else if (data.note === '使用済み') {
-    msg.textContent = MESSAGES.ng_used;
-  } else {
-    msg.textContent = MESSAGES.ng_invalid;
-  }
+  msg.textContent = isOK ? 'ご利用ありがとうございます' : (data.note === '使用済み' ? 'すでに使用済みです' : 'このQRは無効です');
   void msg.offsetWidth;
   msg.classList.add('show');
 
@@ -272,39 +168,18 @@ function showResult(data) {
 
   // 残り枚数
   var remEl = document.getElementById('remaining');
-  if (isOK && data.remaining !== undefined) {
+  if (isOK && data.remaining !== null && data.remaining !== undefined) {
     remEl.className = 'remaining';
     document.getElementById('remainVal').textContent = data.remaining;
     void remEl.offsetWidth;
     remEl.classList.add('show');
   } else {
-    remEl.className = 'remaining'; // 非表示（アニメなし）
+    remEl.className = 'remaining';
     remEl.style.opacity = '0';
   }
 
   document.getElementById('result').classList.add('active');
-}
-
-// ===== LocalStorageを監視（スタッフ画面からの通知を受信）=====
-window.addEventListener('storage', function(e) {
-  if (e.key !== 'drinkpass_result') return;
-  if (!e.newValue) return;
-
-  try {
-    var data = JSON.parse(e.newValue);
-    if (data.timestamp === lastTimestamp) return;
-    lastTimestamp = data.timestamp;
-    showResult(data);
-  } catch(err) {}
-});
-
-// ===== 同一タブ内テスト用（index.htmlと同じタブで開く場合）=====
-window.receiveResult = function(data) {
-  showResult(data);
 };
-
-// ===== 初期表示 =====
-showStandby();
 </script>
 </body>
 </html>
