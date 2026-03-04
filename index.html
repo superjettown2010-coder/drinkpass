@@ -114,7 +114,7 @@
 </head>
 <body>
 
-<div class="logo">Drink<span>Pass</span></div>
+<div class="logo">Drink<span>Pass</span> <span style="font-size:11px;font-weight:400;color:var(--muted);letter-spacing:0.05em;">v1.0.1</span></div>
 
 <div class="tab-bar">
   <button class="tab active" id="tab-scan" onclick="switchTab('scan')">
@@ -224,6 +224,10 @@
 </div>
 
 <script>
+// DrinkPass v1.0.1
+// 更新履歴:
+// v1.0.0 - 初版リリース（ZXingスキャン・OK/NG音・管理画面）
+// v1.0.1 - OK音をチャイム2音、NG音を連続ブザーに変更
 var db = {};
 var scanLog = [];
 var codeReader = null;
@@ -300,49 +304,34 @@ function getAudioCtx() {
 function playOK() {
   try {
     var ctx = getAudioCtx();
-    // レジ・決済音：短くシャープな高音「ピッ」
-    var osc = ctx.createOscillator();
-    var gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(1400, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(1600, ctx.currentTime + 0.06);
-    gain.gain.setValueAtTime(0.9, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.12);
+    // チャイム2音「ポーン♪」
+    [0, 0.2].forEach(function(d, i) {
+      var osc = ctx.createOscillator(), gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = i === 0 ? 880 : 1320;
+      gain.gain.setValueAtTime(0.9, ctx.currentTime + d);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + d + 0.4);
+      osc.start(ctx.currentTime + d);
+      osc.stop(ctx.currentTime + d + 0.4);
+    });
   } catch(e) {}
 }
 
 function playNG() {
   try {
     var ctx = getAudioCtx();
-    // ブザー音：低くこもった「ブー」を0.6秒
-    var osc = ctx.createOscillator();
-    var gain = ctx.createGain();
-    // 歪み感を出すためsawwave
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(160, ctx.currentTime);
-
-    // ブザーらしいトレモロ（振動感）
-    var lfo = ctx.createOscillator();
-    var lfoGain = ctx.createGain();
-    lfo.frequency.value = 30;
-    lfoGain.gain.value = 40;
-    lfo.connect(lfoGain);
-    lfoGain.connect(osc.frequency);
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    gain.gain.setValueAtTime(0.85, ctx.currentTime);
-    gain.gain.setValueAtTime(0.85, ctx.currentTime + 0.55);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.65);
-
-    lfo.start(ctx.currentTime);
-    lfo.stop(ctx.currentTime + 0.65);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.65);
+    // 連続ブザー「ブブブッ」3連短音
+    [0, 0.2, 0.4].forEach(function(d) {
+      var osc = ctx.createOscillator(), gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'square';
+      osc.frequency.value = 200;
+      gain.gain.setValueAtTime(0.9, ctx.currentTime + d);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + d + 0.15);
+      osc.start(ctx.currentTime + d);
+      osc.stop(ctx.currentTime + d + 0.15);
+    });
   } catch(e) {}
 }
 
