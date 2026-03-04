@@ -760,19 +760,30 @@ function resetAll() {
 // ===== CAMERA =====
 let cameraStream = null;
 let scanInterval = null;
+let barcodeDetector = null;
 
 async function startCamera() {
   const wrap = document.getElementById('cameraWrap');
   const video = document.getElementById('cameraVideo');
+
+  // BarcodeDetector対応チェック（iOS16+ Safari / Chrome対応）
+  if ('BarcodeDetector' in window) {
+    barcodeDetector = new BarcodeDetector({ formats: ['qr_code'] });
+  } else if (typeof jsQR === 'undefined') {
+    alert('お使いのブラウザはQRスキャンに対応していません。\niOS16以上のSafariをお使いください。');
+    return;
+  }
+
   try {
     cameraStream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
     });
     video.srcObject = cameraStream;
+    await new Promise(r => video.onloadedmetadata = r);
     wrap.style.display = 'block';
-    scanInterval = setInterval(scanFrame, 300);
+    scanInterval = setInterval(scanFrame, 250);
   } catch (e) {
-    alert('カメラにアクセスできませんでした。\nブラウザの設定でカメラ権限を許可してください。\n\n' + e.message);
+    alert('カメラにアクセスできませんでした。\nSafariの設定 → このWebサイト → カメラを「許可」にしてください。\n\n' + e.message);
   }
 }
 
@@ -782,20 +793,36 @@ function stopCamera() {
   document.getElementById('cameraWrap').style.display = 'none';
 }
 
-function scanFrame() {
+async function scanFrame() {
   const video = document.getElementById('cameraVideo');
-  const canvas = document.getElementById('cameraCanvas');
-  if (!video.readyState || video.readyState < 2) return;
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(video, 0, 0);
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
-  if (code && code.data) {
-    document.getElementById('qrInput').value = code.data;
-    stopCamera();
-    handleScan();
+  if (!video.readyState || video.readyState < 2 || video.paused) return;
+
+  try {
+    if (barcodeDetector) {
+      // BarcodeDetector（iOS Safari / Chrome）
+      const codes = await barcodeDetector.detect(video);
+      if (codes.length > 0) {
+        document.getElementById('qrInput').value = codes[0].rawValue;
+        stopCamera();
+        handleScan();
+      }
+    } else {
+      // jsQRフォールバック
+      const canvas = document.getElementById('cameraCanvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
+      if (code && code.data) {
+        document.getElementById('qrInput').value = code.data;
+        stopCamera();
+        handleScan();
+      }
+    }
+  } catch(e) {
+    // スキャン中のエラーは無視して継続
   }
 }
 
